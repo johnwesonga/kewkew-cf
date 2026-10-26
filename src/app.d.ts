@@ -1,11 +1,19 @@
-// See https://svelte.dev/docs/kit/types#app.d.ts
-// for information about these interfaces
+// See https://svelte.dev/docs/kit/types#app.d.ts for information about these interfaces.
+import type { createAuth } from './lib/server/auth';
+
+type StaffSession = ReturnType<typeof createAuth>['$Infer']['Session'];
+
 declare global {
+	interface Env {
+		BETTER_AUTH_SECRET: string;
+		KEWKEW_BOOTSTRAP_SECRET: string;
+	}
+
 	namespace App {
-		// interface Error {}
-		// interface Locals {}
-		// interface PageData {}
-		// interface PageState {}
+		interface Locals {
+			user: StaffSession['user'] | null;
+			session: StaffSession['session'] | null;
+		}
 	}
 }
 

@@ -1,0 +1,2 @@
+BETTER_AUTH_SECRET=replace-with-a-unique-random-value
+KEWKEW_BOOTSTRAP_SECRET=replace-with-a-different-unique-random-value
