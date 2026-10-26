@@ -108,7 +108,13 @@ suspension state.
 ## Implementation notes
 
 - Email/password was selected to preserve the Phoenix staff sign-in behavior.
+- Better Auth provides the email/password and SvelteKit integration with its
+  native D1 support. Public password sign-up is disabled. Trusted bootstrap
+  provisions the initial identity with Better Auth's password hashing in the
+  same D1 batch as the organization records.
+- Better Auth's rate-limit table includes its implicit `id` primary key. The
+  committed D1 migration rebuilds that table to match Better Auth's schema, so
+  local setup does not need a separate `npx auth migrate` step.
 - D1 remains the source of truth. Multi-row changes use D1 batches and
   conditional writes; no PostgreSQL row-lock assumptions are carried over.
-- The staff authentication and invitation-delivery mechanisms remain separate
-  decisions from the data model and will be reviewed in their own increments.
+- Invitation delivery remains a separate decision for CF-1F.
