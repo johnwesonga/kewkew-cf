@@ -2,6 +2,7 @@ import { env as cloudflareEnv } from 'cloudflare:workers';
 import { constantTimeEqual, hashPassword } from 'better-auth/crypto';
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
+import { supportedTimezones } from '../../lib/timezones';
 
 export const load: PageServerLoad = async () => {
 	const env = cloudflareEnv as Env;
@@ -44,10 +45,8 @@ export const actions: Actions = {
 			return fail(400, { message: 'Enter valid organization, location, and administrator details.' });
 		}
 
-		try {
-			new Intl.DateTimeFormat('en-US', { timeZone: timezone });
-		} catch {
-			return fail(400, { message: 'Enter a valid IANA timezone.' });
+		if (!supportedTimezones.includes(timezone as (typeof supportedTimezones)[number])) {
+			return fail(400, { message: 'Select a supported location timezone.' });
 		}
 
 		const userId = crypto.randomUUID();
