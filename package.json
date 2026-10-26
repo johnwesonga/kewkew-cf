@@ -1,0 +1,33 @@
+{
+	"name": "kewkew-cf",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"scripts": {
+		"dev": "wrangler dev",
+		"dev:vite": "vite dev",
+		"build": "vite build",
+		"preview": "wrangler dev --env preview",
+		"cf:types": "wrangler types",
+		"db:migrate:local": "wrangler d1 migrations apply kewkew-local --local",
+		"db:migrate:preview": "wrangler d1 migrations apply kewkew-preview --env preview --remote",
+		"db:migrate:production": "wrangler d1 migrations apply kewkew-production --env production --remote",
+		"prepare": "svelte-kit sync || echo ''",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+	},
+	"devDependencies": {
+		"@sveltejs/adapter-cloudflare": "^8.0.1",
+		"@sveltejs/kit": "^3.0.0",
+		"@sveltejs/vite-plugin-svelte": "^7.2.0",
+		"svelte": "^5.57.1",
+		"svelte-check": "^4.6.0",
+		"typescript": "^6.0.3",
+		"vite": "^8.3.0",
+		"wrangler": "^4.153.0"
+	},
+	"imports": {
+		"#lib": "./src/lib/index.js",
+		"#lib/*": "./src/lib/*"
+	}
+}
