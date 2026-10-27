@@ -379,6 +379,83 @@ button, input, select { font: inherit; }
 .staff-access-empty h1 { margin: 0; font-size: 26px; letter-spacing: -.04em; }
 .staff-access-empty p:last-child { margin: 10px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
 
+.theme-switcher { position: fixed; right: 20px; bottom: 20px; z-index: 20; display: inline-flex; align-items: center; gap: 7px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 11px; background: var(--paper); color: var(--muted); box-shadow: var(--shadow); font-size: 10px; font-weight: 750; white-space: nowrap; }
+.theme-switcher select { min-height: 34px; padding: 0 9px; border: 1px solid var(--line); border-radius: 9px; background: var(--paper); color: var(--ink); font-size: 10px; }
+.theme-switcher select:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
+
+:root[data-color-scheme='dark'] {
+	color-scheme: dark;
+	--ink: #e8eee9;
+	--muted: #a1b0a7;
+	--line: #34433a;
+	--paper: #1d2922;
+	--canvas: #141d18;
+	--green: #65bd91;
+	--green-dark: #9cdbb8;
+	--mint: #263e31;
+	--lime: #d4f078;
+	--red: #ff9b8e;
+	--shadow: 0 18px 50px rgba(0, 0, 0, .28);
+}
+
+:root[data-color-scheme='dark'] body,
+:root[data-color-scheme='dark'] .staff-shell { background: var(--canvas); color: var(--ink); }
+:root[data-color-scheme='dark'] .setup-page .topbar,
+:root[data-color-scheme='dark'] .signin-page .topbar,
+:root[data-color-scheme='dark'] .staff-shell .topbar { background: rgba(29, 41, 34, .96); }
+:root[data-color-scheme='dark'] .staff-sidebar { background: #18221c; }
+:root[data-color-scheme='dark'] .staff-sidebar-card,
+:root[data-color-scheme='dark'] .staff-card-tag,
+:root[data-color-scheme='dark'] .coming-soon,
+:root[data-color-scheme='dark'] .location-status.inactive { background: #26352c; color: #bfcbc2; }
+:root[data-color-scheme='dark'] .staff-welcome-card { border-color: var(--line); background: linear-gradient(110deg, #1d2922 0%, #202f26 100%); }
+:root[data-color-scheme='dark'] .staff-location-list li,
+:root[data-color-scheme='dark'] .location-add-details { border-color: #2b3930; }
+:root[data-color-scheme='dark'] .staff-workspace-switcher label,
+:root[data-color-scheme='dark'] .staff-current-organization,
+:root[data-color-scheme='dark'] .staff-account-copy strong,
+:root[data-color-scheme='dark'] .organization-name-form label,
+:root[data-color-scheme='dark'] .location-edit-details form label,
+:root[data-color-scheme='dark'] .location-add-details form label,
+:root[data-color-scheme='dark'] .staff-nav-link,
+:root[data-color-scheme='dark'] .location-edit-details > summary,
+:root[data-color-scheme='dark'] .location-status-button,
+:root[data-color-scheme='dark'] .staff-signout { color: #c3cec6; }
+:root[data-color-scheme='dark'] .staff-nav-link:hover,
+:root[data-color-scheme='dark'] .staff-signout:hover,
+:root[data-color-scheme='dark'] .location-edit-details > summary:hover,
+:root[data-color-scheme='dark'] .location-status-button:hover { background: #26352c; color: var(--ink); }
+:root[data-color-scheme='dark'] .staff-avatar { background: #30483a; color: #c0e8d0; }
+:root[data-color-scheme='dark'] .staff-active-pill i { box-shadow: 0 0 0 3px #30483a; }
+:root[data-color-scheme='dark'] .staff-card-tag,
+:root[data-color-scheme='dark'] .staff-feedback.success-message { color: var(--green-dark); }
+:root[data-color-scheme='dark'] .staff-feedback.error-message,
+:root[data-color-scheme='dark'] .setup-page .error-message,
+:root[data-color-scheme='dark'] .signin-page .error-message { background: #482a26; color: #ffb4a9; }
+:root[data-color-scheme='dark'] .setup-page .field,
+:root[data-color-scheme='dark'] .signin-page .field,
+:root[data-color-scheme='dark'] .setup-page .field input,
+:root[data-color-scheme='dark'] .setup-page .field select,
+:root[data-color-scheme='dark'] .signin-page .field input,
+:root[data-color-scheme='dark'] .organization-name-controls input,
+:root[data-color-scheme='dark'] .location-edit-details form input,
+:root[data-color-scheme='dark'] .location-add-details form input { color: var(--ink); }
+:root[data-color-scheme='dark'] .setup-page .field input,
+:root[data-color-scheme='dark'] .setup-page .field select,
+:root[data-color-scheme='dark'] .signin-page .field input,
+:root[data-color-scheme='dark'] .organization-name-controls input,
+:root[data-color-scheme='dark'] .location-edit-details form input,
+:root[data-color-scheme='dark'] .location-add-details form input { border-color: var(--line); background: #18221c; }
+:root[data-color-scheme='dark'] .signin-page { background: radial-gradient(ellipse at 84% 40%, rgba(72, 117, 87, .2), transparent 35%), var(--canvas); }
+:root[data-color-scheme='dark'] .welcome-copy,
+:root[data-color-scheme='dark'] .welcome-note small { color: var(--muted); }
+:root[data-color-scheme='dark'] .note-icon,
+:root[data-color-scheme='dark'] .lock-mark { background: var(--mint); color: var(--green-dark); }
+
+@media (max-width: 650px) {
+	.theme-switcher { right: 12px; bottom: 12px; }
+}
+
 @media (max-width: 900px) {
 	.staff-workspace { grid-template-columns: 180px minmax(0, 1fr); }
 	.staff-sidebar { padding-left: 14px; }
