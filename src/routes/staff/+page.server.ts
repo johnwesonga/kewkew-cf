@@ -2,33 +2,34 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { env as cloudflareEnv } from 'cloudflare:workers';
 import { createAuth } from '../../lib/server/auth';
+import { createDatabase } from '../../lib/server/database';
+import { and, asc, eq, exists, sql } from 'drizzle-orm';
+import { locations, membershipLocationAccess, organizationMemberships, organizations } from '../../lib/server/schema';
 import { isValidIanaTimezone } from '../../lib/timezones';
-
-type Membership = {
-	organizationId: string;
-	organizationName: string;
-	role: 'admin' | 'operator';
-};
-
-type Location = {
-	id: string;
-	name: string;
-	timezone: string;
-	isActive: number;
-};
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user) redirect(303, '/staff/sign-in');
 
 	const env = cloudflareEnv as Env;
-	const membershipsResult = await env.DB.prepare(
-		`SELECT o.id AS organizationId, o.name AS organizationName, m.role
-		 FROM organization_memberships AS m
-		 JOIN organizations AS o ON o.id = m.organization_id
-		 WHERE m.user_id = ? AND m.status = 'active'
-		 ORDER BY o.name COLLATE NOCASE, o.id`
-	).bind(locals.user.id).all<Membership>();
-	const memberships = membershipsResult.results ?? [];
+	const db = createDatabase(env.DB);
+	const memberships = await db
+		.select({
+			organizationId: organizations.id,
+			organizationName: organizations.name,
+			role: organizationMemberships.role
+		})
+		.from(organizationMemberships)
+		.innerJoin(
+			organizations,
+			eq(organizations.id, organizationMemberships.organizationId)
+		)
+		.where(
+			and(
+				eq(organizationMemberships.userId, locals.user.id),
+				eq(organizationMemberships.status, 'active')
+			)
+		)
+		.orderBy(asc(sql`lower(${organizations.name})`), asc(organizations.id));
 
 	if (memberships.length === 0) {
 		return {
@@ -46,39 +47,61 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
 	if (!organization) error(404, 'Workspace not found');
 
-	const locationsResult = organization.role === 'admin'
-		? await env.DB.prepare(
-				`SELECT l.id, l.name, l.timezone, l.is_active AS isActive
-				 FROM locations AS l
-				 WHERE l.organization_id = ?
-				   AND EXISTS (
-					 SELECT 1 FROM organization_memberships AS m
-					 WHERE m.organization_id = l.organization_id
-					   AND m.user_id = ? AND m.role = 'admin' AND m.status = 'active'
-				   )
-				 ORDER BY l.name COLLATE NOCASE, l.id`
-			)
-				.bind(organization.organizationId, locals.user.id)
-				.all<Location>()
-		: await env.DB.prepare(
-				`SELECT l.id, l.name, l.timezone, l.is_active AS isActive
-				 FROM membership_location_access AS a
-				 JOIN locations AS l
-				   ON l.organization_id = a.organization_id AND l.id = a.location_id
-				 JOIN organization_memberships AS m
-				   ON m.organization_id = a.organization_id AND m.user_id = a.user_id
-				 WHERE a.organization_id = ? AND a.user_id = ?
-				   AND m.role = 'operator' AND m.status = 'active'
-				 ORDER BY l.name COLLATE NOCASE, l.id`
-			)
-				.bind(organization.organizationId, locals.user.id)
-				.all<Location>();
-
+	const locationSelection = {
+		id: locations.id,
+		name: locations.name,
+		timezone: locations.timezone,
+		isActive: locations.isActive
+	};
+	const scopedLocations = organization.role === 'admin'
+		? await db
+				.select(locationSelection)
+				.from(locations)
+				.innerJoin(
+					organizationMemberships,
+					and(
+						eq(organizationMemberships.organizationId, locations.organizationId),
+						eq(organizationMemberships.organizationId, organization.organizationId),
+						eq(organizationMemberships.userId, locals.user.id),
+						eq(organizationMemberships.role, 'admin'),
+						eq(organizationMemberships.status, 'active')
+					)
+				)
+				.where(eq(locations.organizationId, organization.organizationId))
+				.orderBy(asc(sql`lower(${locations.name})`), asc(locations.id))
+		: await db
+				.select(locationSelection)
+				.from(membershipLocationAccess)
+				.innerJoin(
+					locations,
+					and(
+						eq(locations.organizationId, membershipLocationAccess.organizationId),
+						eq(locations.id, membershipLocationAccess.locationId)
+					)
+				)
+				.innerJoin(
+					organizationMemberships,
+					and(
+						eq(organizationMemberships.organizationId, membershipLocationAccess.organizationId),
+						eq(organizationMemberships.userId, membershipLocationAccess.userId),
+						eq(organizationMemberships.organizationId, organization.organizationId),
+						eq(organizationMemberships.userId, locals.user.id),
+						eq(organizationMemberships.role, 'operator'),
+						eq(organizationMemberships.status, 'active')
+					)
+				)
+				.where(
+					and(
+						eq(membershipLocationAccess.organizationId, organization.organizationId),
+						eq(membershipLocationAccess.userId, locals.user.id)
+					)
+				)
+				.orderBy(asc(sql`lower(${locations.name})`), asc(locations.id));
 	return {
 		user: { name: locals.user.name, email: locals.user.email },
 		organizations: memberships,
 		organization,
-		locations: locationsResult.results ?? []
+		locations: scopedLocations
 	};
 };
 
@@ -95,16 +118,29 @@ export const actions: Actions = {
 		}
 
 		const env = cloudflareEnv as Env;
-		const result = await env.DB.prepare(
-			`UPDATE organizations
-			 SET name = ?, updated_at = ?
-			 WHERE id = ?
-			   AND EXISTS (
-				 SELECT 1 FROM organization_memberships AS m
-				 WHERE m.organization_id = organizations.id
-				   AND m.user_id = ? AND m.role = 'admin' AND m.status = 'active'
-			   )`
-		).bind(name, new Date().toISOString(), organizationId, locals.user.id).run();
+		const db = createDatabase(env.DB);
+		const result = await db
+			.update(organizations)
+			.set({ name, updatedAt: new Date().toISOString() })
+			.where(
+				and(
+					eq(organizations.id, organizationId),
+					exists(
+						db
+							.select({ id: organizationMemberships.userId })
+							.from(organizationMemberships)
+							.where(
+								and(
+									eq(organizationMemberships.organizationId, organizations.id),
+									eq(organizationMemberships.userId, locals.user.id),
+									eq(organizationMemberships.role, 'admin'),
+									eq(organizationMemberships.status, 'active')
+								)
+						)
+					)
+				)
+			)
+			.run();
 
 		if (result.meta.changes !== 1) error(404, 'Workspace not found');
 
@@ -126,15 +162,32 @@ export const actions: Actions = {
 		}
 
 		const env = cloudflareEnv as Env;
-		const result = await env.DB.prepare(
-			`INSERT INTO locations (id, organization_id, name, timezone, is_active)
-			 SELECT ?, ?, ?, ?, 1
-			 WHERE EXISTS (
-				SELECT 1 FROM organization_memberships
-				WHERE organization_id = ? AND user_id = ?
-				  AND role = 'admin' AND status = 'active'
-			 )`
-		).bind(crypto.randomUUID(), organizationId, name, timezone, organizationId, locals.user.id).run();
+		const db = createDatabase(env.DB);
+		const locationId = crypto.randomUUID();
+		const now = new Date().toISOString();
+		const result = await db
+			.insert(locations)
+			.select(
+				db
+					.select({
+						id: sql<string>`${locationId}`.as('id'),
+						organizationId: sql<string>`${organizationId}`.as('organization_id'),
+						name: sql<string>`${name}`.as('name'),
+						timezone: sql<string>`${timezone}`.as('timezone'),
+						isActive: sql<number>`1`.as('is_active'),
+						updatedAt: sql<string>`${now}`.as('updated_at')
+					})
+					.from(organizationMemberships)
+					.where(
+						and(
+							eq(organizationMemberships.organizationId, organizationId),
+							eq(organizationMemberships.userId, locals.user.id),
+							eq(organizationMemberships.role, 'admin'),
+							eq(organizationMemberships.status, 'active')
+						)
+					)
+			)
+			.run();
 
 		if (result.meta.changes !== 1) error(404, 'Workspace not found');
 
@@ -157,23 +210,30 @@ export const actions: Actions = {
 		}
 
 		const env = cloudflareEnv as Env;
-		const result = await env.DB.prepare(
-			`UPDATE locations
-			 SET name = ?, timezone = ?, updated_at = ?
-			 WHERE id = ? AND organization_id = ?
-			   AND EXISTS (
-				 SELECT 1 FROM organization_memberships AS m
-				 WHERE m.organization_id = locations.organization_id
-				   AND m.user_id = ? AND m.role = 'admin' AND m.status = 'active'
-			   )`
-		).bind(
-			name,
-			timezone,
-			new Date().toISOString(),
-			locationId,
-			organizationId,
-			locals.user.id
-		).run();
+		const db = createDatabase(env.DB);
+		const result = await db
+			.update(locations)
+			.set({ name, timezone, updatedAt: new Date().toISOString() })
+			.where(
+				and(
+					eq(locations.id, locationId),
+					eq(locations.organizationId, organizationId),
+					exists(
+						db
+							.select({ userId: organizationMemberships.userId })
+							.from(organizationMemberships)
+							.where(
+								and(
+									eq(organizationMemberships.organizationId, locations.organizationId),
+									eq(organizationMemberships.userId, locals.user.id),
+									eq(organizationMemberships.role, 'admin'),
+									eq(organizationMemberships.status, 'active')
+								)
+							)
+					)
+				)
+			)
+			.run();
 
 		if (result.meta.changes !== 1) error(404, 'Location not found');
 
@@ -192,22 +252,30 @@ export const actions: Actions = {
 		}
 
 		const env = cloudflareEnv as Env;
-		const result = await env.DB.prepare(
-			`UPDATE locations
-			 SET is_active = ?, updated_at = ?
-			 WHERE id = ? AND organization_id = ?
-			   AND EXISTS (
-				 SELECT 1 FROM organization_memberships AS m
-				 WHERE m.organization_id = locations.organization_id
-				   AND m.user_id = ? AND m.role = 'admin' AND m.status = 'active'
-			   )`
-		).bind(
-			Number(activeValue),
-			new Date().toISOString(),
-			locationId,
-			organizationId,
-			locals.user.id
-		).run();
+		const db = createDatabase(env.DB);
+		const result = await db
+			.update(locations)
+			.set({ isActive: Number(activeValue), updatedAt: new Date().toISOString() })
+			.where(
+				and(
+					eq(locations.id, locationId),
+					eq(locations.organizationId, organizationId),
+					exists(
+						db
+							.select({ userId: organizationMemberships.userId })
+							.from(organizationMemberships)
+							.where(
+								and(
+									eq(organizationMemberships.organizationId, locations.organizationId),
+									eq(organizationMemberships.userId, locals.user.id),
+									eq(organizationMemberships.role, 'admin'),
+									eq(organizationMemberships.status, 'active')
+								)
+							)
+					)
+				)
+			)
+			.run();
 
 		if (result.meta.changes !== 1) error(404, 'Location not found');
 
