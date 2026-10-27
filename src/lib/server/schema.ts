@@ -22,6 +22,16 @@ export const locations = sqliteTable('locations', {
 	updatedAt: text('updated_at').notNull()
 });
 
+export const services = sqliteTable('services', {
+	id: text('id').primaryKey(),
+	organizationId: text('organization_id').notNull(),
+	locationId: text('location_id').notNull(),
+	name: text('name').notNull(),
+	description: text('description'),
+	isActive: integer('is_active').notNull(),
+	updatedAt: text('updated_at').notNull()
+});
+
 export const membershipLocationAccess = sqliteTable('membership_location_access', {
 	organizationId: text('organization_id').notNull(),
 	userId: text('user_id').notNull(),

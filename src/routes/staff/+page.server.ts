@@ -3,8 +3,8 @@ import type { Actions, PageServerLoad } from './$types';
 import { env as cloudflareEnv } from 'cloudflare:workers';
 import { createAuth } from '../../lib/server/auth';
 import { createDatabase } from '../../lib/server/database';
-import { and, asc, eq, exists, sql } from 'drizzle-orm';
-import { locations, membershipLocationAccess, organizationMemberships, organizations } from '../../lib/server/schema';
+import { and, asc, eq, exists, inArray, sql } from 'drizzle-orm';
+import { locations, membershipLocationAccess, organizationMemberships, organizations, services } from '../../lib/server/schema';
 import { isValidIanaTimezone } from '../../lib/timezones';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
@@ -36,7 +36,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			user: { name: locals.user.name, email: locals.user.email },
 			organizations: [],
 			organization: null,
-			locations: []
+			locations: [],
+			services: []
 		};
 	}
 
@@ -97,11 +98,31 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 					)
 				)
 				.orderBy(asc(sql`lower(${locations.name})`), asc(locations.id));
+	const accessibleLocationIds = scopedLocations.map((location) => location.id);
+	const scopedServices = accessibleLocationIds.length > 0
+		? await db
+				.select({
+					id: services.id,
+					locationId: services.locationId,
+					name: services.name,
+					description: services.description,
+					isActive: services.isActive
+				})
+				.from(services)
+				.where(
+					and(
+						eq(services.organizationId, organization.organizationId),
+						inArray(services.locationId, accessibleLocationIds)
+					)
+				)
+				.orderBy(asc(sql`lower(${services.name})`), asc(services.id))
+		: [];
 	return {
 		user: { name: locals.user.name, email: locals.user.email },
 		organizations: memberships,
 		organization,
-		locations: scopedLocations
+		locations: scopedLocations,
+		services: scopedServices
 	};
 };
 
@@ -280,6 +301,145 @@ export const actions: Actions = {
 		if (result.meta.changes !== 1) error(404, 'Location not found');
 
 		return { success: `Location ${activeValue === '1' ? 'reactivated' : 'deactivated'}.` };
+	},
+	createService: async ({ locals, request, url }) => {
+		if (!locals.user) redirect(303, '/staff/sign-in');
+
+		const form = await request.formData();
+		const organizationId = url.searchParams.get('organization') ?? '';
+		const locationId = url.searchParams.get('location') ?? '';
+		const name = String(form.get('serviceName') ?? '').trim();
+		const description = String(form.get('serviceDescription') ?? '').trim();
+
+		if (!name || name.length > 160 || description.length > 1000) {
+			return fail(400, { message: 'Enter a service name up to 160 characters and a description up to 1,000 characters.' });
+		}
+
+		const env = cloudflareEnv as Env;
+		const db = createDatabase(env.DB);
+		const serviceId = crypto.randomUUID();
+		const now = new Date().toISOString();
+		const result = await db
+			.insert(services)
+			.select(
+				db
+					.select({
+						id: sql<string>`${serviceId}`.as('id'),
+						organizationId: sql<string>`${organizationId}`.as('organization_id'),
+						locationId: locations.id,
+						name: sql<string>`${name}`.as('name'),
+						description: sql<string | null>`${description || null}`.as('description'),
+						isActive: sql<number>`1`.as('is_active'),
+						updatedAt: sql<string>`${now}`.as('updated_at')
+					})
+					.from(locations)
+					.innerJoin(
+						organizationMemberships,
+						and(
+							eq(organizationMemberships.organizationId, locations.organizationId),
+							eq(organizationMemberships.organizationId, organizationId),
+							eq(organizationMemberships.userId, locals.user.id),
+							eq(organizationMemberships.role, 'admin'),
+							eq(organizationMemberships.status, 'active')
+						)
+					)
+					.where(
+						and(
+							eq(locations.id, locationId),
+							eq(locations.organizationId, organizationId)
+						)
+					)
+			)
+			.run();
+
+		if (result.meta.changes !== 1) error(404, 'Location not found');
+
+		return { success: `Service “${name}” created.` };
+	},
+	updateService: async ({ locals, request, url }) => {
+		if (!locals.user) redirect(303, '/staff/sign-in');
+
+		const form = await request.formData();
+		const organizationId = url.searchParams.get('organization') ?? '';
+		const serviceId = url.searchParams.get('service') ?? '';
+		const name = String(form.get('serviceName') ?? '').trim();
+		const description = String(form.get('serviceDescription') ?? '').trim();
+
+		if (!name || name.length > 160 || description.length > 1000) {
+			return fail(400, { message: 'Enter a service name up to 160 characters and a description up to 1,000 characters.' });
+		}
+
+		const env = cloudflareEnv as Env;
+		const db = createDatabase(env.DB);
+		const result = await db
+			.update(services)
+			.set({ name, description: description || null, updatedAt: new Date().toISOString() })
+			.where(
+				and(
+					eq(services.id, serviceId),
+					eq(services.organizationId, organizationId),
+					exists(
+						db
+							.select({ userId: organizationMemberships.userId })
+							.from(organizationMemberships)
+							.where(
+								and(
+									eq(organizationMemberships.organizationId, services.organizationId),
+									eq(organizationMemberships.userId, locals.user.id),
+									eq(organizationMemberships.role, 'admin'),
+									eq(organizationMemberships.status, 'active')
+								)
+							)
+					)
+				)
+			)
+			.run();
+
+		if (result.meta.changes !== 1) error(404, 'Service not found');
+
+		return { success: `Service “${name}” updated.` };
+	},
+	setServiceStatus: async ({ locals, request, url }) => {
+		if (!locals.user) redirect(303, '/staff/sign-in');
+
+		const form = await request.formData();
+		const organizationId = url.searchParams.get('organization') ?? '';
+		const serviceId = url.searchParams.get('service') ?? '';
+		const activeValue = String(form.get('active') ?? '');
+
+		if (activeValue !== '0' && activeValue !== '1') {
+			return fail(400, { message: 'Choose whether the service should be active or inactive.' });
+		}
+
+		const env = cloudflareEnv as Env;
+		const db = createDatabase(env.DB);
+		const result = await db
+			.update(services)
+			.set({ isActive: Number(activeValue), updatedAt: new Date().toISOString() })
+			.where(
+				and(
+					eq(services.id, serviceId),
+					eq(services.organizationId, organizationId),
+					exists(
+						db
+							.select({ userId: organizationMemberships.userId })
+							.from(organizationMemberships)
+							.where(
+								and(
+									eq(organizationMemberships.organizationId, services.organizationId),
+									eq(organizationMemberships.userId, locals.user.id),
+									eq(organizationMemberships.role, 'admin'),
+									eq(organizationMemberships.status, 'active')
+								)
+							)
+					)
+				)
+			)
+			.run();
+
+		if (result.meta.changes !== 1) error(404, 'Service not found');
+
+		return { success: `Service ${activeValue === '1' ? 'reactivated' : 'deactivated'}.` };
 	},
 	signOut: async ({ request, url }) => {
 		const env = cloudflareEnv as Env;

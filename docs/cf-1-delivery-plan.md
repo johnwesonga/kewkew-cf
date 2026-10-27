@@ -105,6 +105,21 @@ suspension state.
 - The invitation delivery provider and recovery flow are documented before
   enabling delivery.
 
+## CF-1E implementation note
+
+The staff workspace now lists services for each location and lets active
+organization admins create, edit, deactivate, and reactivate them. Service
+actions are authorized on the server and bind each service to its existing
+organization/location; edits cannot move a service. Operators can view services
+only for locations already visible to their active membership and receive no
+management actions. The existing `services` table supports this slice, so it
+does not require a schema migration.
+
+Queue and session creation, public discovery, and visitor joining are not yet
+implemented. CF-2 and CF-3 must reject new sessions and joins when either the
+service or its location is inactive, while leaving existing records available
+for authorized staff resolution.
+
 ## Implementation notes
 
 - Email/password was selected to preserve the Phoenix staff sign-in behavior.
