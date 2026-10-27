@@ -59,8 +59,6 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			organization: null,
 			locations: [],
 			services: []
-			locations: [],
-			services: []
 		};
 	}
 

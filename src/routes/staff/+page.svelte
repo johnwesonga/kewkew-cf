@@ -211,13 +211,9 @@
 							<h2 id="services-title">{data.organization.role === 'admin' ? 'Services by location' : 'Services at your locations'}</h2>
 							<span class="staff-card-tag">{data.services.length} {data.services.length === 1 ? 'service' : 'services'}</span>
 						</div>
-<<<<<<< HEAD
-						{#if data.locations.length > 0}
-=======
 						{#if data.locations.length === 0}
 							<p class="staff-empty-copy">Add a location before configuring services.</p>
 						{:else}
->>>>>>> ee0bef9 (Add service administration to staff workspace)
 							<div class="staff-services-list">
 								{#each data.locations as location (location.id)}
 									{@const locationServices = data.services.filter((service) => service.locationId === location.id)}
@@ -226,13 +222,9 @@
 											<strong>{location.name}</strong>
 											{#if location.isActive === 0}<span>Location inactive</span>{/if}
 										</div>
-<<<<<<< HEAD
-										{#if locationServices.length > 0}
-=======
 										{#if locationServices.length === 0}
 											<p class="staff-empty-copy">No services configured for this location.</p>
 										{:else}
->>>>>>> ee0bef9 (Add service administration to staff workspace)
 											<ul class="staff-service-list">
 												{#each locationServices as service (service.id)}
 													<li>
@@ -261,11 +253,6 @@
 												</li>
 											{/each}
 										</ul>
-<<<<<<< HEAD
-									{:else}
-										<p class="staff-empty-copy">No services configured for this location.</p>
-=======
->>>>>>> ee0bef9 (Add service administration to staff workspace)
 									{/if}
 									{#if data.organization.role === 'admin'}
 										<details class="service-add-details">
@@ -282,11 +269,6 @@
 								</div>
 								{/each}
 							</div>
-<<<<<<< HEAD
-						{:else}
-							<p class="staff-empty-copy">Add a location before configuring services.</p>
-=======
->>>>>>> ee0bef9 (Add service administration to staff workspace)
 						{/if}
 					</section>
 
