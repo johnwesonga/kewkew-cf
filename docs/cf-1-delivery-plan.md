@@ -87,6 +87,11 @@ historical records.
 - Inactive services cannot accept joins or open new sessions; existing records
   and staff resolution remain available.
 
+**Implementation note** — Service administration is implemented in the staff
+workspace using the existing D1 `services` table. CF-2/CF-3 must enforce the
+inactive service and location restrictions when session and join workflows are
+added.
+
 ### CF-1F: Staff membership lifecycle
 
 **Value** — Let admins securely invite staff and maintain role, location, and
