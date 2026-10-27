@@ -206,6 +206,72 @@
 						</section>
 					</div>
 
+					<section class="staff-card staff-services-card" aria-labelledby="services-title">
+						<div class="staff-card-heading">
+							<h2 id="services-title">{data.organization.role === 'admin' ? 'Services by location' : 'Services at your locations'}</h2>
+							<span class="staff-card-tag">{data.services.length} {data.services.length === 1 ? 'service' : 'services'}</span>
+						</div>
+						{#if data.locations.length > 0}
+							<div class="staff-services-list">
+								{#each data.locations as location (location.id)}
+									{@const locationServices = data.services.filter((service) => service.locationId === location.id)}
+									<div class="staff-services-location">
+										<div class="staff-services-location-heading">
+											<strong>{location.name}</strong>
+											{#if location.isActive === 0}<span>Location inactive</span>{/if}
+										</div>
+										{#if locationServices.length > 0}
+											<ul class="staff-service-list">
+												{#each locationServices as service (service.id)}
+													<li>
+														<div class="staff-service-copy">
+															<strong>{service.name}</strong>
+															{#if service.description}<small>{service.description}</small>{/if}
+														</div>
+														<span class:inactive={service.isActive === 0} class="location-status">{service.isActive === 1 ? 'Active' : 'Inactive'}</span>
+														{#if data.organization.role === 'admin'}
+															<div class="location-actions">
+																<details class="location-edit-details">
+																	<summary>Edit</summary>
+																	<form method="POST" action={`?/updateService&organization=${encodeURIComponent(data.organization.organizationId)}&service=${encodeURIComponent(service.id)}`}>
+																		<label for={`service-name-${service.id}`}>Service name</label>
+																		<input id={`service-name-${service.id}`} name="serviceName" value={service.name} maxlength="160" required />
+																		<label for={`service-description-${service.id}`}>Description (optional)</label>
+																		<textarea id={`service-description-${service.id}`} name="serviceDescription" maxlength="1000">{service.description ?? ''}</textarea>
+																		<button type="submit">Save service</button>
+																	</form>
+																</details>
+																<form method="POST" action={`?/setServiceStatus&organization=${encodeURIComponent(data.organization.organizationId)}&service=${encodeURIComponent(service.id)}`}>
+																	<button class="location-status-button" type="submit" name="active" value={service.isActive === 1 ? '0' : '1'}>{service.isActive === 1 ? 'Deactivate' : 'Reactivate'}</button>
+																</form>
+															</div>
+													{/if}
+												</li>
+											{/each}
+										</ul>
+									{:else}
+										<p class="staff-empty-copy">No services configured for this location.</p>
+									{/if}
+									{#if data.organization.role === 'admin'}
+										<details class="service-add-details">
+											<summary><span aria-hidden="true">＋</span> Add a service</summary>
+											<form method="POST" action={`?/createService&organization=${encodeURIComponent(data.organization.organizationId)}&location=${encodeURIComponent(location.id)}`}>
+												<label for={`new-service-name-${location.id}`}>Service name</label>
+												<input id={`new-service-name-${location.id}`} name="serviceName" maxlength="160" placeholder="e.g. Passport renewal" required />
+												<label for={`new-service-description-${location.id}`}>Description (optional)</label>
+												<textarea id={`new-service-description-${location.id}`} name="serviceDescription" maxlength="1000"></textarea>
+												<button type="submit">Create service</button>
+											</form>
+										</details>
+									{/if}
+								</div>
+								{/each}
+							</div>
+						{:else}
+							<p class="staff-empty-copy">Add a location before configuring services.</p>
+						{/if}
+					</section>
+
 					<section class="staff-card staff-account-card" aria-labelledby="account-title">
 						<div class="staff-card-heading">
 							<h2 id="account-title">Your account</h2>

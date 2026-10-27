@@ -96,9 +96,30 @@ data integrity, or the existing migration workflow.
 
 ## Decision record
 
-Not yet evaluated. Complete this section after the pilot with:
+### Pilot outcome (2026-10-26)
 
-- The exact stable `drizzle-orm` version used.
-- Which queries were converted and which stayed as D1 SQL, with reasons.
-- Check/build results and any compatibility limitations found.
-- A recommendation and follow-up scope, if needed.
+- Stable package version: `drizzle-orm` 0.45.4, installed as an exact version.
+- Converted the staff workspace's active membership read and its admin/operator
+  location reads to Drizzle. They retain the active membership and organization
+  scope predicates in the query itself.
+- Organization profile and location create, update, and activation mutations
+  use Drizzle. Authorization remains inside each conditional statement,
+  including the location insert-select. The trusted setup flow retains its
+  existing seven-statement D1 batch because it atomically initializes several
+  tables; Better Auth continues to receive the D1 binding directly.
+- Wrangler SQL migrations remain the only migration workflow. No Drizzle Kit
+  dependency or generated migration files were added.
+- `npm run check` passed with 0 errors and 0 warnings. `npm run build` passed.
+- The existing queries explicitly used SQLite `COLLATE NOCASE`. The pilot
+  preserves case-insensitive name ordering with a Drizzle `lower(...)` SQL
+  expression. This is a small example of retaining SQL where dialect details
+  matter; the ordering remains deterministic by adding the ID as a tie-breaker.
+
+**Recommendation: adopt Drizzle selectively for application reads and
+single-statement writes.** The pilot keeps tenant filters visible while
+providing inferred result types, with no schema or auth migration. Use it for
+similar paths as they are touched. Keep multi-statement domain batches in D1
+SQL unless a separate change demonstrates equal clarity and safety. Do not
+rewrite existing paths solely for ORM uniformity. Revisit migration tooling
+separately only if maintaining the typed schema alongside SQL migrations
+becomes a demonstrated source of drift.

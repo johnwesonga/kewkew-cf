@@ -308,6 +308,36 @@ button, input, select { font: inherit; }
 .staff-welcome-mark i { width: 4px; height: 4px; border-radius: 50%; background: #82b999; }
 .staff-overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; }
 .staff-card { min-width: 0; padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); box-shadow: 0 5px 20px rgba(26, 52, 39, .035); }
+.staff-services-card { margin-top: 16px; }
+.staff-services-list { display: grid; gap: 17px; }
+.staff-services-location { min-width: 0; padding-top: 14px; border-top: 1px solid #eff2ef; }
+.staff-services-location:first-child { padding-top: 0; border-top: 0; }
+.staff-services-location-heading { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; color: #34443b; font-size: 11px; }
+.staff-services-location-heading span { color: var(--muted); font-size: 9px; font-weight: 600; }
+.staff-service-list { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.staff-service-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid #eff2ef; }
+.staff-service-copy { display: grid; gap: 4px; min-width: 0; }
+.staff-service-copy strong { color: var(--ink); font-size: 11px; }
+.staff-service-copy small { color: var(--muted); font-size: 10px; line-height: 1.45; }
+.staff-service-list .location-actions { grid-column: 1 / -1; justify-content: flex-end; }
+.service-add-details { margin-top: 11px; padding-top: 11px; border-top: 1px solid #eff2ef; }
+.service-add-details > summary { display: inline-flex; align-items: center; gap: 6px; color: var(--green); font-size: 10px; font-weight: 800; cursor: pointer; list-style: none; }
+.service-add-details > summary::-webkit-details-marker { display: none; }
+.service-add-details > summary span { font-size: 14px; }
+.service-add-details[open] > form { display: grid; gap: 7px; max-width: 420px; margin-top: 12px; }
+.service-add-details form label,
+.location-edit-details form label { color: #34443b; font-size: 9px; font-weight: 750; }
+.service-add-details form input,
+.service-add-details form textarea,
+.location-edit-details form textarea { width: 100%; min-width: 0; min-height: 37px; padding: 9px; border: 1px solid #dfe7e0; border-radius: 8px; outline: none; background: var(--paper); color: var(--ink); font: inherit; font-size: 10px; }
+.service-add-details form textarea,
+.location-edit-details form textarea { min-height: 64px; resize: vertical; }
+.service-add-details form input:focus,
+.service-add-details form textarea:focus,
+.location-edit-details form textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(23, 107, 75, .11); }
+.service-add-details form button { min-height: 36px; margin-top: 3px; padding: 0 11px; border: 0; border-radius: 8px; background: var(--green); color: #fff; font-size: 9px; font-weight: 800; cursor: pointer; }
+.service-add-details form button:hover { background: var(--green-dark); }
+.service-add-details form button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 .staff-card-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
 .staff-card-heading h2 { margin: 0; font-size: 13px; letter-spacing: -.01em; }
 .staff-card-tag, .coming-soon { padding: 6px 8px; border-radius: 99px; background: #eef3ef; color: #68756d; font-size: 9px; font-weight: 750; white-space: nowrap; }
