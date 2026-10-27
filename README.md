@@ -14,9 +14,10 @@ create local secret values in `.dev.vars`:
 cp .dev.vars.example .dev.vars
 ```
 
-Replace both example values with different high-entropy values. For example,
-generate each with `openssl rand -base64 32`. Keep `.dev.vars` private; it is
-ignored by Git.
+Replace the authentication examples with different high-entropy values. For
+example, generate each with `openssl rand -base64 32`. Set `RESEND_API_KEY`
+from your Resend account, use a sender address on a verified Resend domain, and
+keep `.dev.vars` private; it is ignored by Git.
 
 Then apply migrations and start the Worker:
 
@@ -28,12 +29,20 @@ npm run dev
 The committed D1 migrations include Better Auth's tables and indexes. You do
 not need to run `npx auth migrate` for local setup.
 
-Wrangler stores local D1 state under `.wrangler/state`. Local development does
-not require Cloudflare authentication.
+Wrangler stores local D1 state under `.wrangler/state`. Local D1 development
+does not require Cloudflare authentication.
 
 The first trusted administrator setup is available at `/setup`. It requires
 `KEWKEW_BOOTSTRAP_SECRET` and can succeed only once. Public self-registration
 is disabled. After setup, staff sign in at `/staff/sign-in`.
+
+Staff invitations use the [Resend email API](https://resend.com/docs/api-reference/emails/send-email).
+Set `RESEND_API_KEY` as a Worker secret, and set `INVITATION_FROM_EMAIL` and
+`PUBLIC_APP_URL` as variables for each deployed environment. Verify the sender
+domain in Resend before using it; localhost is allowed for the local app URL,
+while preview and production URLs must use HTTPS. Failed sends remain visible
+to administrators; revoke the failed invitation and issue a new one after
+restoring delivery.
 
 ## Build and checks
 

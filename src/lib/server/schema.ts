@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 export const organizations = sqliteTable('organizations', {
 	id: text('id').primaryKey(),
@@ -10,8 +10,10 @@ export const organizationMemberships = sqliteTable('organization_memberships', {
 	organizationId: text('organization_id').notNull(),
 	userId: text('user_id').notNull(),
 	role: text('role', { enum: ['admin', 'operator'] }).notNull(),
-	status: text('status', { enum: ['active', 'suspended'] }).notNull()
-});
+	status: text('status', { enum: ['active', 'suspended'] }).notNull(),
+	createdAt: text('created_at').notNull(),
+	updatedAt: text('updated_at').notNull()
+}, (table) => [primaryKey({ columns: [table.organizationId, table.userId] })]);
 
 export const locations = sqliteTable('locations', {
 	id: text('id').primaryKey(),
@@ -35,5 +37,62 @@ export const services = sqliteTable('services', {
 export const membershipLocationAccess = sqliteTable('membership_location_access', {
 	organizationId: text('organization_id').notNull(),
 	userId: text('user_id').notNull(),
-	locationId: text('location_id').notNull()
+	locationId: text('location_id').notNull(),
+	createdAt: text('created_at').notNull()
+}, (table) => [primaryKey({ columns: [table.organizationId, table.userId, table.locationId] })]);
+
+export const users = sqliteTable('users', {
+	id: text('id').primaryKey(),
+	name: text('name').notNull(),
+	email: text('email').notNull(),
+	emailVerified: integer('email_verified').notNull(),
+	image: text('image'),
+	createdAt: text('created_at').notNull(),
+	updatedAt: text('updated_at').notNull()
+});
+
+export const accounts = sqliteTable('accounts', {
+	id: text('id').primaryKey(),
+	accountId: text('account_id').notNull(),
+	providerId: text('provider_id').notNull(),
+	userId: text('user_id').notNull(),
+	accessToken: text('access_token'),
+	refreshToken: text('refresh_token'),
+	idToken: text('id_token'),
+	accessTokenExpiresAt: text('access_token_expires_at'),
+	refreshTokenExpiresAt: text('refresh_token_expires_at'),
+	scope: text('scope'),
+	password: text('password'),
+	createdAt: text('created_at').notNull(),
+	updatedAt: text('updated_at').notNull()
+});
+
+export const staffInvitations = sqliteTable('staff_invitations', {
+	id: text('id').primaryKey(),
+	organizationId: text('organization_id').notNull(),
+	invitedEmail: text('invited_email').notNull(),
+	role: text('role', { enum: ['admin', 'operator'] }).notNull(),
+	locationIdsJson: text('location_ids_json').notNull(),
+	tokenDigest: text('token_digest').notNull(),
+	createdByUserId: text('created_by_user_id').notNull(),
+	createdAt: text('created_at').notNull(),
+	expiresAt: text('expires_at').notNull(),
+	deliveryState: text('delivery_state', { enum: ['sent', 'failed'] }).notNull(),
+	acceptedByUserId: text('accepted_by_user_id'),
+	acceptedAt: text('accepted_at'),
+	revokedAt: text('revoked_at')
+});
+
+export const membershipAuditEvents = sqliteTable('membership_audit_events', {
+	id: text('id').primaryKey(),
+	organizationId: text('organization_id').notNull(),
+	actorUserId: text('actor_user_id').notNull(),
+	subjectUserId: text('subject_user_id').notNull(),
+	changeType: text('change_type', { enum: ['membership_created', 'role_changed', 'location_access_changed', 'suspended', 'reactivated', 'invitation_accepted'] }).notNull(),
+	beforeRole: text('before_role', { enum: ['admin', 'operator'] }),
+	afterRole: text('after_role', { enum: ['admin', 'operator'] }),
+	beforeStatus: text('before_status', { enum: ['active', 'suspended'] }),
+	afterStatus: text('after_status', { enum: ['active', 'suspended'] }),
+	detailsJson: text('details_json'),
+	createdAt: text('created_at').notNull()
 });

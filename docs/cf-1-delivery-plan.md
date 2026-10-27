@@ -110,6 +110,36 @@ suspension state.
 - The invitation delivery provider and recovery flow are documented before
   enabling delivery.
 
+**Implementation decision** — Invitation email uses Resend's HTTP email API
+through a small server-side sender module. `RESEND_API_KEY`,
+`INVITATION_FROM_EMAIL`, and the canonical `PUBLIC_APP_URL` are configured per
+environment; the sender domain must be verified with Resend before use. The API
+key stays server-side, and sends use an idempotency key based on the invitation
+ID. Invitations expire after seven days, are single-use, and persist only a
+SHA-256 digest of a 256-bit random token. If delivery fails, the invite is
+retained with a failed delivery state; an administrator revokes it and issues a
+fresh invitation after fixing delivery. There is no resend of the same token
+and no account password recovery flow in this increment; existing account
+recovery remains out of scope until its provider and verification policy are
+separately decided.
+
+**Implemented behavior** — `/staff/access` is admin-only and supports sending
+invitations, replacing member roles and operator locations, suspending or
+restoring memberships, and revoking pending invitations. `/staff/invitation/:token`
+accepts a valid invitation, creates a verified identity and credential account
+or reuses the signed-in invited identity, then applies membership and location
+access in a D1 batch. All membership changes are organization-scoped and
+audited. Conditional writes prevent demoting or suspending the last active
+administrator. Route data access uses Drizzle query builders, including the
+conditional writes collected into Drizzle's D1 batch API. Public
+self-registration remains disabled.
+
+The staff workspace now has a shared sidebar modeled on Phoenix's Workspace and
+Setup navigation. Setup links are rendered only for active organization admins,
+and `/staff/setup` enforces that role on the server. Organization, location,
+and service entries link to their current sections; Staff access opens the new
+membership lifecycle screen. Queue setup is shown as unavailable until CF-2.
+
 ## CF-1E implementation note
 
 The staff workspace now lists services for each location and lets active
