@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { supportedTimezones } from '../../lib/timezones';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
@@ -87,6 +88,8 @@
 						</div>
 						<span class="staff-active-pill"><i aria-hidden="true"></i> Membership active</span>
 					</header>
+					{#if form?.message}<p class="staff-feedback error-message" role="alert">{form.message}</p>{/if}
+					{#if form?.success}<p class="staff-feedback success-message" role="status">{form.success}</p>{/if}
 
 					<section class="staff-welcome-card" aria-labelledby="workspace-ready-title">
 						<div>
@@ -99,6 +102,13 @@
 							<i></i><i></i><i></i>
 						</div>
 					</section>
+					{#if data.organization.role === 'admin'}
+						<datalist id="location-timezone-options">
+							{#each supportedTimezones as timezone}
+								<option value={timezone}></option>
+							{/each}
+						</datalist>
+					{/if}
 
 					<div class="staff-overview-grid">
 						<section class="staff-card organization-profile-card" aria-labelledby="organization-profile-title">
@@ -123,8 +133,6 @@
 										/>
 										<button type="submit">Save changes</button>
 									</div>
-									{#if form?.message}<p class="staff-form-message error-message" role="alert">{form.message}</p>{/if}
-									{#if form?.success}<p class="staff-form-message success-message" role="status">{form.success}</p>{/if}
 								</form>
 							{:else}
 								<dl class="organization-readonly">
@@ -143,11 +151,35 @@
 								<ul class="staff-location-list">
 									{#each data.locations as location}
 										<li>
-											<span class="location-symbol" aria-hidden="true">⌖</span>
-											<span class="location-copy"><strong>{location.name}</strong><small>{location.timezone}</small></span>
-											<span class:inactive={location.isActive === 0} class="location-status">
-												{location.isActive === 1 ? 'Active' : 'Inactive'}
-											</span>
+											<div class="location-summary">
+												<span class="location-symbol" aria-hidden="true">⌖</span>
+												<span class="location-copy"><strong>{location.name}</strong><small>{location.timezone}</small></span>
+												<span class:inactive={location.isActive === 0} class="location-status">
+													{location.isActive === 1 ? 'Active' : 'Inactive'}
+												</span>
+											</div>
+											{#if data.organization.role === 'admin'}
+												<div class="location-actions">
+													<details class="location-edit-details">
+														<summary>Edit</summary>
+														<form
+															method="POST"
+															action={`?/updateLocation&organization=${encodeURIComponent(data.organization.organizationId)}&location=${encodeURIComponent(location.id)}`}
+														>
+															<label for={`location-name-${location.id}`}>Location name</label>
+															<input id={`location-name-${location.id}`} name="locationName" value={location.name} maxlength="160" required />
+															<label for={`location-timezone-${location.id}`}>Timezone</label>
+															<input id={`location-timezone-${location.id}`} name="timezone" value={location.timezone} list="location-timezone-options" placeholder="Africa/Nairobi" required />
+															<button type="submit">Save location</button>
+														</form>
+													</details>
+													<form method="POST" action={`?/setLocationStatus&organization=${encodeURIComponent(data.organization.organizationId)}&location=${encodeURIComponent(location.id)}`}>
+														<button class="location-status-button" type="submit" name="active" value={location.isActive === 1 ? '0' : '1'}>
+															{location.isActive === 1 ? 'Deactivate' : 'Reactivate'}
+														</button>
+													</form>
+												</div>
+											{/if}
 										</li>
 									{/each}
 								</ul>
@@ -157,6 +189,19 @@
 										? 'There are no locations in this organization yet.'
 										: 'No locations have been assigned to your account yet.'}
 								</p>
+							{/if}
+							{#if data.organization.role === 'admin'}
+								<details class="location-add-details">
+									<summary><span aria-hidden="true">＋</span> Add a location</summary>
+									<form method="POST" action={`?/createLocation&organization=${encodeURIComponent(data.organization.organizationId)}`}>
+										<label for="new-location-name">Location name</label>
+										<input id="new-location-name" name="locationName" maxlength="160" placeholder="e.g. Riverside" required />
+										<label for="new-location-timezone">Timezone</label>
+										<input id="new-location-timezone" name="timezone" list="location-timezone-options" placeholder="Africa/Nairobi" required />
+										<p>Enter a valid IANA timezone. Suggestions are provided for common locations.</p>
+										<button type="submit">Create location</button>
+									</form>
+								</details>
 							{/if}
 						</section>
 					</div>
