@@ -27,7 +27,7 @@ All stories below are **Planned**. The AQ identifiers follow the Phoenix referen
 
 ## AQ-1: View queues
 
-**Status** — Planned
+**Status** — Complete
 
 **User story** — As an organization administrator or authorized operator, I want to find queues for my organization and assigned locations so I can review their configuration and current operating state.
 

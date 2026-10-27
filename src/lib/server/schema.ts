@@ -1,4 +1,5 @@
-import { integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { sql } from 'drizzle-orm';
 
 export const organizations = sqliteTable('organizations', {
 	id: text('id').primaryKey(),
@@ -33,6 +34,32 @@ export const services = sqliteTable('services', {
 	isActive: integer('is_active').notNull(),
 	updatedAt: text('updated_at').notNull()
 });
+
+export const queues = sqliteTable('queues', {
+	id: text('id').primaryKey(),
+	organizationId: text('organization_id').notNull(),
+	locationId: text('location_id').notNull(),
+	serviceId: text('service_id').notNull(),
+	name: text('name').notNull(),
+	identityPolicy: text('identity_policy', { enum: ['anonymous', 'name_required'] }).notNull(),
+	activeTicketCapacity: integer('active_ticket_capacity'),
+	isActive: integer('is_active').notNull(),
+	createdAt: text('created_at').notNull(),
+	updatedAt: text('updated_at').notNull()
+});
+
+export const queueSessions = sqliteTable('queue_sessions', {
+	id: text('id').primaryKey(),
+	organizationId: text('organization_id').notNull(),
+	queueId: text('queue_id').notNull(),
+	state: text('state', { enum: ['open', 'paused', 'closed'] }).notNull(),
+	openedAt: text('opened_at').notNull(),
+	closedAt: text('closed_at')
+}, (table) => [
+	uniqueIndex('queue_sessions_one_current_per_queue')
+		.on(table.queueId)
+		.where(sql`${table.state} IN ('open', 'paused')`)
+]);
 
 export const membershipLocationAccess = sqliteTable('membership_location_access', {
 	organizationId: text('organization_id').notNull(),

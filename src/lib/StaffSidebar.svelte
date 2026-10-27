@@ -3,7 +3,7 @@
 		organizationId: string | null;
 		organizationRole: 'admin' | 'operator' | null;
 		locationCount: number;
-		active: 'overview' | 'setup' | 'staff';
+		active: 'overview' | 'setup' | 'staff' | 'queues';
 	};
 	let { organizationId, organizationRole, locationCount, active }: Props = $props();
 	let isAdmin = $derived(organizationRole === 'admin' && organizationId !== null);
@@ -14,6 +14,7 @@
 	let locationsUrl = $derived(`${overviewUrl}#locations-title`);
 	let servicesUrl = $derived(`${overviewUrl}#services-title`);
 	let staffUrl = $derived(`/staff/access${query}`);
+	let queuesUrl = $derived(`/staff/queues${query}`);
 </script>
 
 <aside class="staff-sidebar">
@@ -23,16 +24,20 @@
 			<span class="staff-nav-icon" aria-hidden="true">▦</span> Overview
 		</a>
 		{#if isAdmin}
-			<a class:active={active !== 'overview'} class="staff-nav-link" href={setupUrl} aria-current={active === 'setup' ? 'page' : undefined}>
+			<a class:active={active === 'setup'} class="staff-nav-link" href={setupUrl} aria-current={active === 'setup' ? 'page' : undefined}>
 				<span class="staff-nav-icon" aria-hidden="true">⚙</span> Setup
 			</a>
 			<div class="staff-nav-subnav" role="group" aria-label="Setup pages">
 				<a href={profileUrl}>Organization</a>
 				<a href={locationsUrl}>Locations</a>
 				<a href={servicesUrl}>Services</a>
-				<span class="staff-nav-link disabled" aria-disabled="true">Queues <small>Coming soon</small></span>
 				<a class:active={active === 'staff'} href={staffUrl} aria-current={active === 'staff' ? 'page' : undefined}>Staff access</a>
 			</div>
+		{/if}
+		{#if organizationId}
+			<a class:active={active === 'queues'} class="staff-nav-link" href={queuesUrl} aria-current={active === 'queues' ? 'page' : undefined}>
+				<span class="staff-nav-icon" aria-hidden="true">≡</span> Queues
+			</a>
 		{/if}
 	</nav>
 	{#if organizationRole}
