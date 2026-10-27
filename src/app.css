@@ -440,9 +440,6 @@ button, input, select { font: inherit; }
 :root[data-color-scheme='dark'] .location-status.inactive { background: #26352c; color: #bfcbc2; }
 :root[data-color-scheme='dark'] .staff-welcome-card { border-color: var(--line); background: linear-gradient(110deg, #1d2922 0%, #202f26 100%); }
 :root[data-color-scheme='dark'] .staff-location-list li,
-:root[data-color-scheme='dark'] .staff-services-location,
-:root[data-color-scheme='dark'] .staff-service-list li,
-:root[data-color-scheme='dark'] .service-add-details,
 :root[data-color-scheme='dark'] .location-add-details { border-color: #2b3930; }
 :root[data-color-scheme='dark'] .staff-workspace-switcher label,
 :root[data-color-scheme='dark'] .staff-current-organization,
@@ -450,8 +447,6 @@ button, input, select { font: inherit; }
 :root[data-color-scheme='dark'] .organization-name-form label,
 :root[data-color-scheme='dark'] .location-edit-details form label,
 :root[data-color-scheme='dark'] .location-add-details form label,
-:root[data-color-scheme='dark'] .service-add-details form label,
-:root[data-color-scheme='dark'] .staff-services-location-heading,
 :root[data-color-scheme='dark'] .staff-nav-link,
 :root[data-color-scheme='dark'] .location-edit-details > summary,
 :root[data-color-scheme='dark'] .location-status-button,
@@ -475,18 +470,12 @@ button, input, select { font: inherit; }
 :root[data-color-scheme='dark'] .organization-name-controls input,
 :root[data-color-scheme='dark'] .location-edit-details form input,
 :root[data-color-scheme='dark'] .location-add-details form input { color: var(--ink); }
-:root[data-color-scheme='dark'] .service-add-details form input,
-:root[data-color-scheme='dark'] .service-add-details form textarea,
-:root[data-color-scheme='dark'] .location-edit-details form textarea { color: var(--ink); }
 :root[data-color-scheme='dark'] .setup-page .field input,
 :root[data-color-scheme='dark'] .setup-page .field select,
 :root[data-color-scheme='dark'] .signin-page .field input,
 :root[data-color-scheme='dark'] .organization-name-controls input,
 :root[data-color-scheme='dark'] .location-edit-details form input,
 :root[data-color-scheme='dark'] .location-add-details form input { border-color: var(--line); background: #18221c; }
-:root[data-color-scheme='dark'] .service-add-details form input,
-:root[data-color-scheme='dark'] .service-add-details form textarea,
-:root[data-color-scheme='dark'] .location-edit-details form textarea { border-color: var(--line); background: #18221c; }
 :root[data-color-scheme='dark'] .signin-page { background: radial-gradient(ellipse at 84% 40%, rgba(72, 117, 87, .2), transparent 35%), var(--canvas); }
 :root[data-color-scheme='dark'] .welcome-copy,
 :root[data-color-scheme='dark'] .welcome-note small { color: var(--muted); }
