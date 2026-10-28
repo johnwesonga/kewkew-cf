@@ -89,7 +89,7 @@ Each story is marked **Planned** until implemented. The AQ identifiers follow th
 
 ## AQ-5: Activate or deactivate a queue
 
-**Status** — Planned
+**Status** — Complete
 
 **User story** — As an organization administrator, I want to deactivate a queue temporarily and reactivate it later while preserving its setup and history.
 
@@ -100,6 +100,8 @@ Each story is marked **Planned** until implemented. The AQ identifiers follow th
 - Staff can continue resolving tickets in an already open or paused session according to staff-operation rules; deactivation does not silently close the session.
 - Reactivation makes the queue eligible for future joins or session opening when the location and service are also active and the session rules allow it.
 - Unauthorized users cannot change activation state by submitting a crafted request.
+
+**Implementation note** — Queue activation is managed from the administrator queue list. Changing this flag does not update any session records. Public availability also checks that the queue, location, and service are active; the manual session-opening flow is covered by AQ-6.
 
 ## AQ-6: Open a manual queue session
 

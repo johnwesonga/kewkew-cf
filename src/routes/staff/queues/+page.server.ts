@@ -150,6 +150,36 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 };
 
 export const actions: Actions = {
+	setQueueActive: async ({ locals, request, url }) => {
+		if (!locals.user) redirect(303, '/staff/sign-in');
+		const form = await request.formData();
+		const organizationId = url.searchParams.get('organization') ?? '';
+		const queueId = String(form.get('queueId') ?? '');
+		const activeValue = String(form.get('active') ?? '');
+		if (!organizationId || !queueId || (activeValue !== '0' && activeValue !== '1')) {
+			return fail(400, { activationMessage: 'Choose a valid queue activation change.' });
+		}
+
+		const db = createDatabase((cloudflareEnv as Env).DB);
+		const result = await db.update(queues)
+			.set({ isActive: Number(activeValue), updatedAt: new Date().toISOString() })
+			.where(and(
+				eq(queues.id, queueId),
+				eq(queues.organizationId, organizationId),
+				exists(db.select({ userId: organizationMemberships.userId })
+					.from(organizationMemberships)
+					.where(and(
+						eq(organizationMemberships.organizationId, queues.organizationId),
+						eq(organizationMemberships.userId, locals.user.id),
+						eq(organizationMemberships.role, 'admin'),
+						eq(organizationMemberships.status, 'active')
+					)))
+			))
+			.run();
+		if (result.meta.changes !== 1) error(404, 'Queue not found');
+
+		redirect(303, `/staff/queues?organization=${encodeURIComponent(organizationId)}&updated=1`);
+	},
 	createQueue: async ({ locals, request, url }) => {
 		if (!locals.user) redirect(303, '/staff/sign-in');
 		const userId = locals.user.id;

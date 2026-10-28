@@ -400,6 +400,13 @@
 											{#if data.organization.role === "admin"}
 												<td>
 													<div class="queue-row-actions">
+														<form method="POST" action={`?/setQueueActive&organization=${encodeURIComponent(data.organization.organizationId)}`}>
+															<input type="hidden" name="queueId" value={queue.id} />
+															<input type="hidden" name="active" value={queue.isActive === 1 ? '0' : '1'} />
+															<button class="queue-edit-link" type="submit" aria-label={`${queue.isActive === 1 ? 'Deactivate' : 'Activate'} ${queue.name}`}>
+																{queue.isActive === 1 ? 'Deactivate' : 'Activate'}
+															</button>
+														</form>
 														<a
 															class="queue-edit-link"
 															href={`/staff/queues/${encodeURIComponent(queue.id)}?organization=${encodeURIComponent(data.organization.organizationId)}`}
