@@ -57,7 +57,7 @@ Each story is marked **Planned** until implemented. The AQ identifiers follow th
 
 ## AQ-3: Edit queue configuration
 
-**Status** — Planned
+**Status** — Complete
 
 **User story** — As an organization administrator, I want to update a queue's visitor-facing rules so future visitors use the latest configuration.
 

@@ -74,6 +74,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			locationName: locations.name,
 			serviceId: services.id,
 			serviceName: services.name,
+			identityPolicy: queues.identityPolicy,
 			isActive: queues.isActive,
 			activeTicketCapacity: queues.activeTicketCapacity,
 			sessionState: queueSessions.state
@@ -142,7 +143,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		queueLocations,
 		queueServices,
 		createRequestId: organization.role === 'admin' ? crypto.randomUUID() : null,
-		created: url.searchParams.get('created') === '1'
+		created: url.searchParams.get('created') === '1',
+		updated: url.searchParams.get('updated') === '1'
 	};
 };
 

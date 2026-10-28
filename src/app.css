@@ -1253,6 +1253,121 @@ select {
 	margin: 18px 0;
 }
 
+.queue-edit-link {
+	display: inline-block;
+	padding: 7px 10px;
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	color: var(--green-dark);
+	font-size: 10px;
+	font-weight: 750;
+	text-decoration: none;
+}
+
+.queue-edit-link:hover {
+	background: var(--mint);
+}
+
+.queue-back-link,
+.queue-cancel-link {
+	color: var(--green-dark);
+	font-size: 12px;
+	font-weight: 700;
+	text-decoration: none;
+}
+
+.queue-back-link:hover,
+.queue-cancel-link:hover {
+	text-decoration: underline;
+}
+
+.queue-edit-heading {
+	margin-top: 18px;
+}
+
+.queue-edit-card {
+	max-width: 680px;
+	padding: 22px;
+}
+
+.queue-edit-card .staff-card-heading h2 {
+	margin: 0;
+	color: var(--ink);
+	font-size: 18px;
+}
+
+.queue-edit-context {
+	margin: 6px 0 0;
+	color: var(--muted);
+	font-size: 11px;
+}
+
+.queue-fixed-details {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 14px;
+	margin: 20px 0;
+	padding: 14px;
+	border-radius: 10px;
+	background: var(--canvas);
+}
+
+.queue-fixed-details div {
+	min-width: 0;
+}
+
+.queue-fixed-details dt {
+	margin-bottom: 5px;
+	color: var(--muted);
+	font-size: 10px;
+	font-weight: 700;
+}
+
+.queue-fixed-details dd {
+	margin: 0;
+	color: var(--ink);
+	font-size: 12px;
+	font-weight: 750;
+}
+
+.queue-edit-form {
+	display: grid;
+	gap: 18px;
+}
+
+.queue-edit-form label {
+	display: grid;
+	gap: 7px;
+	color: var(--ink);
+	font-size: 12px;
+	font-weight: 700;
+}
+
+.queue-edit-form input,
+.queue-edit-form select {
+	box-sizing: border-box;
+	width: 100%;
+	min-height: 44px;
+	padding: 0 12px;
+	border: 1px solid #dce4dd;
+	border-radius: 8px;
+	background: var(--surface);
+	color: var(--ink);
+	font: inherit;
+}
+
+.queue-edit-form input:focus,
+.queue-edit-form select:focus {
+	border-color: var(--green);
+	outline: 3px solid rgb(39 111 75 / 14%);
+}
+
+.queue-edit-actions {
+	display: flex;
+	align-items: center;
+	gap: 18px;
+}
+
 .queue-create-card {
 	margin-bottom: 18px;
 }
@@ -1894,6 +2009,9 @@ select {
 @media (max-width: 650px) {
 	.queue-create-row,
 	.queue-filters {
+		grid-template-columns: 1fr;
+	}
+	.queue-fixed-details {
 		grid-template-columns: 1fr;
 	}
 
