@@ -72,7 +72,7 @@ Each story is marked **Planned** until implemented. The AQ identifiers follow th
 
 ## AQ-4: Share a queue link and QR code
 
-**Status** — Planned
+**Status** — Complete
 
 **User story** — As an organization administrator, I want a reusable public link and printable QR code for a queue so visitors can reach its current signup page.
 
@@ -84,6 +84,8 @@ Each story is marked **Planned** until implemented. The AQ identifiers follow th
 - Opening the link reveals only the public queue page and does not grant staff access or access to private ticket tracking.
 - An inactive queue or a queue without an available session cannot accept a join through the link; the visitor receives a clear unavailable state.
 - Access to the link-management controls is restricted to authorized organization administrators.
+
+**Scope note** — This story publishes the queue page and its availability state. Issuing visitor tickets remains part of the visitor joining flow; its join controls will use this public queue URL.
 
 ## AQ-5: Activate or deactivate a queue
 

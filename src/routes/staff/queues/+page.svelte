@@ -1,5 +1,6 @@
 <script lang="ts">
 	import StaffSidebar from "../../../lib/StaffSidebar.svelte";
+	import QueueShareLink from "../../../lib/QueueShareLink.svelte";
 	import type { PageProps } from "./$types";
 
 	let { data, form }: PageProps = $props();
@@ -396,15 +397,18 @@
 													>{queue.activeTicketCapacity ??
 														"Unlimited"}</td
 												>
-												{#if data.organization.role === "admin"}
-													<td
-														><a
+											{#if data.organization.role === "admin"}
+												<td>
+													<div class="queue-row-actions">
+														<a
 															class="queue-edit-link"
 															href={`/staff/queues/${encodeURIComponent(queue.id)}?organization=${encodeURIComponent(data.organization.organizationId)}`}
-															>Edit configuration</a
-														></td
-													>
-												{/if}
+															>Edit</a
+														>
+													<QueueShareLink publicId={queue.publicId} queueName={queue.name} />
+													</div>
+												</td>
+											{/if}
 											</tr>
 										{/each}
 									</tbody>

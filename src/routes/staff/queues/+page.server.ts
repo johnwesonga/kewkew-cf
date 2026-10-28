@@ -69,6 +69,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	const rows = await db
 		.select({
 			id: queues.id,
+			publicId: queues.publicId,
 			name: queues.name,
 			locationId: locations.id,
 			locationName: locations.name,
@@ -203,10 +204,12 @@ export const actions: Actions = {
 		if (!validSelection) return invalid('Choose a service that belongs to the selected location.');
 
 		const queueId = crypto.randomUUID();
+		const publicId = crypto.randomUUID().replaceAll('-', '');
 		const now = new Date().toISOString();
 		const inserted = await db.insert(queues).select(
 			db.select({
 				id: sql<string>`${queueId}`.as('id'),
+				publicId: sql<string>`${publicId}`.as('public_id'),
 				organizationId: sql<string>`${organizationId}`.as('organization_id'),
 				locationId: sql<string>`${locationId}`.as('location_id'),
 				serviceId: sql<string>`${serviceId}`.as('service_id'),

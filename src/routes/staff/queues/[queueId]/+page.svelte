@@ -1,5 +1,6 @@
 <script lang="ts">
 	import StaffSidebar from '../../../../lib/StaffSidebar.svelte';
+	import QueueShareLink from '../../../../lib/QueueShareLink.svelte';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
@@ -80,6 +81,10 @@
 						<a class="queue-cancel-link" href={`/staff/queues${organizationQuery}`}>Cancel</a>
 					</div>
 				</form>
+				<div class="queue-edit-share">
+					<h3>Public link and QR code</h3>
+					<QueueShareLink publicId={data.queue.publicId} queueName={data.queue.name} expanded />
+				</div>
 			</section>
 			</div>
 		</main>

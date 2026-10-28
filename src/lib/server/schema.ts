@@ -37,6 +37,7 @@ export const services = sqliteTable('services', {
 
 export const queues = sqliteTable('queues', {
 	id: text('id').primaryKey(),
+	publicId: text('public_id').notNull(),
 	organizationId: text('organization_id').notNull(),
 	locationId: text('location_id').notNull(),
 	serviceId: text('service_id').notNull(),
@@ -49,7 +50,8 @@ export const queues = sqliteTable('queues', {
 	createdAt: text('created_at').notNull(),
 	updatedAt: text('updated_at').notNull()
 }, (table) => [
-	uniqueIndex('queues_create_request_once').on(table.organizationId, table.createdByUserId, table.createRequestId)
+	uniqueIndex('queues_create_request_once').on(table.organizationId, table.createdByUserId, table.createRequestId),
+	uniqueIndex('queues_public_id_unique').on(table.publicId)
 ]);
 
 export const queueSessions = sqliteTable('queue_sessions', {

@@ -32,6 +32,7 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 	const [queue, locationCount] = await Promise.all([
 		db.select({
 			id: queues.id,
+			publicId: queues.publicId,
 			name: queues.name,
 			locationName: locations.name,
 			serviceName: services.name,
