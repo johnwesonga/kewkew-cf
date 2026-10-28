@@ -14,7 +14,8 @@
 		"db:migrate:production": "wrangler d1 migrations apply kewkew-production --env production --remote",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"deploy": "npm run build && wrangler deploy"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-cloudflare": "^8.0.1",
