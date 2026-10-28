@@ -1,11 +1,11 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { env as cloudflareEnv } from 'cloudflare:workers';
-import { createAuth } from '../../lib/server/auth';
-import { createDatabase } from '../../lib/server/database';
+import { createAuth } from '#lib/server/auth';
+import { createDatabase } from '#lib/server/database';
 import { and, asc, eq, exists, sql } from 'drizzle-orm';
-import { locations, membershipLocationAccess, organizationMemberships, organizations, services } from '../../lib/server/schema';
-import { isValidIanaTimezone } from '../../lib/timezones';
+import { locations, membershipLocationAccess, organizationMemberships, organizations, services } from '#lib/server/schema';
+import { isValidIanaTimezone } from '#lib/timezones';
 
 type Membership = {
 	organizationId: string;

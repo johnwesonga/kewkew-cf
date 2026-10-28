@@ -2,8 +2,8 @@ import { env as cloudflareEnv } from 'cloudflare:workers';
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { and, eq } from 'drizzle-orm';
-import { createDatabase } from '../../../lib/server/database';
-import { locations, organizations, queueSessions, queues, services } from '../../../lib/server/schema';
+import { createDatabase } from '#lib/server/database';
+import { locations, organizations, queueSessions, queues, services } from '#lib/server/schema';
 
 export const load: PageServerLoad = async ({ params }) => {
 	if (!/^[0-9a-f]{32}$/i.test(params.publicId)) error(404, 'Queue not found');

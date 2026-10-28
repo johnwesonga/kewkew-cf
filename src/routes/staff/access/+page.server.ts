@@ -2,9 +2,9 @@ import { env as cloudflareEnv } from 'cloudflare:workers';
 import { fail, error, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { BatchItem } from 'drizzle-orm/batch';
-import { sendInvitationEmail } from '../../../lib/server/email';
+import { sendInvitationEmail } from '#lib/server/email';
 import { and, asc, count, desc, eq, exists, inArray, isNull, ne, or, sql } from 'drizzle-orm';
-import { createDatabase } from '../../../lib/server/database';
+import { createDatabase } from '#lib/server/database';
 import {
 	locations,
 	membershipAuditEvents,
@@ -13,7 +13,7 @@ import {
 	organizations,
 	staffInvitations,
 	users
-} from '../../../lib/server/schema';
+} from '#lib/server/schema';
 
 type Role = 'admin' | 'operator';
 type Status = 'active' | 'suspended';

@@ -30,7 +30,8 @@
 	},
 	"imports": {
 		"#lib": "./src/lib/index.js",
-		"#lib/*": "./src/lib/*"
+		"#lib/*.svg": "./src/lib/*.svg",
+		"#lib/*": "./src/lib/*.js"
 	},
 	"dependencies": {
 		"better-auth": "^1.7.13",

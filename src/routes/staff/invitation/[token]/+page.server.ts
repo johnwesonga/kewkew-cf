@@ -4,7 +4,7 @@ import type { Actions, PageServerLoad } from './$types';
 import { hashPassword } from 'better-auth/crypto';
 import type { BatchItem } from 'drizzle-orm/batch';
 import { and, count, eq, exists, gt, isNull, not, or, sql } from 'drizzle-orm';
-import { createDatabase } from '../../../../lib/server/database';
+import { createDatabase } from '#lib/server/database';
 import {
 	accounts,
 	locations,
@@ -14,7 +14,7 @@ import {
 	organizations,
 	staffInvitations,
 	users
-} from '../../../../lib/server/schema';
+} from '#lib/server/schema';
 
 async function digest(value: string) {
 	const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));

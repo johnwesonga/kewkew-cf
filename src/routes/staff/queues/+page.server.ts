@@ -2,7 +2,7 @@ import { env as cloudflareEnv } from 'cloudflare:workers';
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { and, asc, count, eq, exists, not, or, sql } from 'drizzle-orm';
-import { createDatabase } from '../../../lib/server/database';
+import { createDatabase } from '#lib/server/database';
 import {
 	locations,
 	membershipLocationAccess,
@@ -11,7 +11,7 @@ import {
 	queueSessions,
 	queues,
 	services
-} from '../../../lib/server/schema';
+} from '#lib/server/schema';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user) redirect(303, '/staff/sign-in');

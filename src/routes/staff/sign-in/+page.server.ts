@@ -1,7 +1,7 @@
 import { env as cloudflareEnv } from 'cloudflare:workers';
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions } from './$types';
-import { createAuth } from '../../../lib/server/auth';
+import { createAuth } from '#lib/server/auth';
 
 export const actions: Actions = {
 	default: async ({ request, url }) => {

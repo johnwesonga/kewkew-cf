@@ -1,5 +1,5 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts for information about these interfaces.
-import type { createAuth } from './lib/server/auth';
+import type { createAuth } from '#lib/server/auth';
 
 type StaffSession = ReturnType<typeof createAuth>['$Infer']['Session'];
 

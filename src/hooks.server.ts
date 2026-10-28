@@ -2,7 +2,7 @@ import { building } from '$app/env';
 import { env as cloudflareEnv } from 'cloudflare:workers';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 import type { Handle } from '@sveltejs/kit/hooks';
-import { createAuth } from './lib/server/auth';
+import { createAuth } from '#lib/server/auth';
 
 export const handle: Handle = async ({ event, resolve }) => {
 	const env = cloudflareEnv as Env;

@@ -2,7 +2,7 @@ import { env as cloudflareEnv } from 'cloudflare:workers';
 import { constantTimeEqual, hashPassword } from 'better-auth/crypto';
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { supportedTimezones } from '../../lib/timezones';
+import { supportedTimezones } from '#lib/timezones';
 
 export const load: PageServerLoad = async () => {
 	const env = cloudflareEnv as Env;

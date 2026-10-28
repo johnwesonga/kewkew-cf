@@ -2,8 +2,8 @@ import { env as cloudflareEnv } from 'cloudflare:workers';
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { and, asc, count, eq, exists, sql } from 'drizzle-orm';
-import { createDatabase } from '../../../../lib/server/database';
-import { locations, organizationMemberships, organizations, queues, services } from '../../../../lib/server/schema';
+import { createDatabase } from '#lib/server/database';
+import { locations, organizationMemberships, organizations, queues, services } from '#lib/server/schema';
 
 export const load: PageServerLoad = async ({ locals, params, url }) => {
 	if (!locals.user) redirect(303, '/staff/sign-in');
