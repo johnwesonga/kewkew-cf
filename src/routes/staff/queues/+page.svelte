@@ -1,6 +1,6 @@
 <script lang="ts">
-	import StaffSidebar from "../../../lib/StaffSidebar.svelte";
-	import QueueShareLink from "../../../lib/QueueShareLink.svelte";
+	import StaffSidebar from "#lib/StaffSidebar.svelte";
+	import QueueShareLink from "#lib/QueueShareLink.svelte";
 	import type { PageProps } from "./$types";
 
 	let { data, form }: PageProps = $props();

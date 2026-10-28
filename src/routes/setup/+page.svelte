@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { supportedTimezones } from '../../lib/timezones';
+	import { supportedTimezones } from '#lib/timezones';
 	import type { PageProps } from './$types';
 
 	let { form }: PageProps = $props();

@@ -31,6 +31,7 @@
 	"imports": {
 		"#lib": "./src/lib/index.js",
 		"#lib/*.svg": "./src/lib/*.svg",
+		"#lib/*.svelte": "./src/lib/*.svelte",
 		"#lib/*": "./src/lib/*.js"
 	},
 	"dependencies": {

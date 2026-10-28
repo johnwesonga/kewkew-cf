@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { supportedTimezones } from "../../lib/timezones";
-	import StaffSidebar from "../../lib/StaffSidebar.svelte";
+	import { supportedTimezones } from "#lib/timezones";
+	import StaffSidebar from "#lib/StaffSidebar.svelte";
 	import type { PageProps } from "./$types";
 
 	let { data, form }: PageProps = $props();

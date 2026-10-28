@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
-	import StaffSidebar from '../../../lib/StaffSidebar.svelte';
+	import StaffSidebar from '#lib/StaffSidebar.svelte';
 	let { data }: PageProps = $props();
 	let query = $derived(`?organization=${encodeURIComponent(data.organization.id)}`);
 </script>
