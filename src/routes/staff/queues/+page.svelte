@@ -163,6 +163,7 @@
 					>
 						Queue configuration updated.
 					</p>{/if}
+				{#if data.opened}<p class="staff-feedback success-message" role="status">Session opened. Ticket numbering starts at 1 for this session.</p>{/if}
 				{#if form?.message}<p
 						class="staff-feedback error-message"
 						role="alert"
@@ -356,10 +357,7 @@
 											><th scope="col">Queue status</th
 											><th scope="col">Session</th><th
 												scope="col"
-												>Active ticket capacity</th
-											>{#if data.organization.role === "admin"}<th
-													scope="col">Actions</th
-												>{/if}</tr
+														>Active ticket capacity</th><th scope="col">Actions</th></tr
 										></thead
 									>
 									<tbody>
@@ -397,9 +395,18 @@
 													>{queue.activeTicketCapacity ??
 														"Unlimited"}</td
 												>
-											{#if data.organization.role === "admin"}
-												<td>
-													<div class="queue-row-actions">
+											<td>
+												<div class="queue-row-actions">
+													{#if queue.sessionState === null && queue.isActive === 1 && queue.locationIsActive === 1 && queue.serviceIsActive === 1}
+														<form method="POST" action={`?/openSession&organization=${encodeURIComponent(data.organization.organizationId)}`}>
+															<input type="hidden" name="queueId" value={queue.id} />
+															<input type="hidden" name="openRequestId" value={queue.openRequestId} />
+															<button class="queue-edit-link" type="submit">Open session</button>
+														</form>
+													{:else if queue.sessionState === null}
+														<span class="queue-label-hint">Activate queue, location, and service to open a session.</span>
+													{/if}
+													{#if data.organization.role === "admin"}
 														<form method="POST" action={`?/setQueueActive&organization=${encodeURIComponent(data.organization.organizationId)}`}>
 															<input type="hidden" name="queueId" value={queue.id} />
 															<input type="hidden" name="active" value={queue.isActive === 1 ? '0' : '1'} />
@@ -413,9 +420,9 @@
 															>Edit</a
 														>
 													<QueueShareLink publicId={queue.publicId} queueName={queue.name} />
+													{/if}
 													</div>
 												</td>
-											{/if}
 											</tr>
 										{/each}
 									</tbody>

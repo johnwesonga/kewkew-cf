@@ -105,7 +105,7 @@ Each story is marked **Planned** until implemented. The AQ identifiers follow th
 
 ## AQ-6: Open a manual queue session
 
-**Status** — Planned
+**Status** — Complete
 
 **User story** — As an organization administrator or authorized operator, I want to open a session for an active queue so visitors can join and staff can serve a new line.
 
@@ -117,6 +117,8 @@ Each story is marked **Planned** until implemented. The AQ identifiers follow th
 - Concurrent open requests produce at most one open session. Losing requests receive a clear already-open result and do not create extra sessions.
 - The write records the session and its initial state atomically. Retrying a request cannot create a second session for the same operation.
 - For queues with recurring schedules, the schedule-specific occurrence rules apply; this manual story does not authorize an extra session alongside an active occurrence.
+
+**Implementation note** — Session opening is available to active administrators and location-assigned operators from the queue list. A database partial unique index prevents concurrent current sessions, while a unique per-request key makes retries idempotent. Recurring schedules are not implemented in this repository yet; their occurrence guard must be integrated with the separate scheduling story.
 
 ## AQ-7: Pause and resume a session
 

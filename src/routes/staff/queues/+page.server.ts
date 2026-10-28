@@ -1,7 +1,7 @@
 import { env as cloudflareEnv } from 'cloudflare:workers';
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { and, asc, count, eq, exists, sql } from 'drizzle-orm';
+import { and, asc, count, eq, exists, not, or, sql } from 'drizzle-orm';
 import { createDatabase } from '../../../lib/server/database';
 import {
 	locations,
@@ -73,8 +73,10 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			name: queues.name,
 			locationId: locations.id,
 			locationName: locations.name,
+			locationIsActive: locations.isActive,
 			serviceId: services.id,
 			serviceName: services.name,
+			serviceIsActive: services.isActive,
 			identityPolicy: queues.identityPolicy,
 			isActive: queues.isActive,
 			activeTicketCapacity: queues.activeTicketCapacity,
@@ -140,16 +142,142 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		organizations: memberships,
 		organization,
 		locationCount: locationCountRows[0]?.value ?? 0,
-		queues: rows,
+		queues: rows.map((queue) => ({ ...queue, openRequestId: crypto.randomUUID() })),
 		queueLocations,
 		queueServices,
 		createRequestId: organization.role === 'admin' ? crypto.randomUUID() : null,
 		created: url.searchParams.get('created') === '1',
-		updated: url.searchParams.get('updated') === '1'
+		updated: url.searchParams.get('updated') === '1',
+		opened: url.searchParams.get('opened') === '1'
 	};
 };
 
 export const actions: Actions = {
+	openSession: async ({ locals, request, url }) => {
+		if (!locals.user) redirect(303, '/staff/sign-in');
+		const form = await request.formData();
+		const organizationId = url.searchParams.get('organization') ?? '';
+		const queueId = String(form.get('queueId') ?? '');
+		const openRequestId = String(form.get('openRequestId') ?? '');
+		const invalid = (message: string, status = 400) => fail(status, { message });
+		if (!organizationId || !queueId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(openRequestId)) {
+			return invalid('This session form has expired. Reload the page and try again.');
+		}
+
+		const db = createDatabase((cloudflareEnv as Env).DB);
+		const userId = locals.user.id;
+		const adminAccess = exists(db.select({ userId: organizationMemberships.userId })
+			.from(organizationMemberships)
+			.where(and(
+				eq(organizationMemberships.organizationId, queues.organizationId),
+				eq(organizationMemberships.userId, userId),
+				eq(organizationMemberships.role, 'admin'),
+				eq(organizationMemberships.status, 'active')
+			)));
+		const operatorAccess = exists(db.select({ userId: membershipLocationAccess.userId })
+			.from(membershipLocationAccess)
+			.innerJoin(organizationMemberships, and(
+				eq(organizationMemberships.organizationId, membershipLocationAccess.organizationId),
+				eq(organizationMemberships.userId, membershipLocationAccess.userId)
+			))
+			.where(and(
+				eq(membershipLocationAccess.organizationId, queues.organizationId),
+				eq(membershipLocationAccess.locationId, queues.locationId),
+				eq(membershipLocationAccess.userId, userId),
+				eq(organizationMemberships.role, 'operator'),
+				eq(organizationMemberships.status, 'active')
+			)));
+		const access = or(adminAccess, operatorAccess);
+		const eligibleQueue = await db.select({
+			queueActive: queues.isActive,
+			locationActive: locations.isActive,
+			serviceActive: services.isActive
+		})
+			.from(queues)
+			.innerJoin(locations, and(
+				eq(locations.organizationId, queues.organizationId),
+				eq(locations.id, queues.locationId)
+			))
+			.innerJoin(services, and(
+				eq(services.organizationId, queues.organizationId),
+				eq(services.id, queues.serviceId),
+				eq(services.locationId, queues.locationId)
+			))
+			.where(and(
+				eq(queues.id, queueId),
+				eq(queues.organizationId, organizationId),
+				access
+			))
+			.get();
+		if (!eligibleQueue) error(404, 'Queue not found');
+		if (eligibleQueue.queueActive !== 1 || eligibleQueue.locationActive !== 1 || eligibleQueue.serviceActive !== 1) {
+			return invalid('Activate the queue, location, and service before opening a session.');
+		}
+
+		const now = new Date().toISOString();
+		const currentSession = db.select({ id: queueSessions.id })
+			.from(queueSessions)
+			.where(and(
+				eq(queueSessions.organizationId, queues.organizationId),
+				eq(queueSessions.queueId, queues.id),
+				sql`${queueSessions.state} IN ('open', 'paused')`
+			));
+		const inserted = await db.insert(queueSessions).select(
+			db.select({
+				id: sql<string>`${crypto.randomUUID()}`.as('id'),
+				organizationId: queues.organizationId,
+				queueId: queues.id,
+				state: sql<'open'>`'open'`.as('state'),
+				openedAt: sql<string>`${now}`.as('opened_at'),
+				closedAt: sql<null>`NULL`.as('closed_at'),
+				openRequestId: sql<string>`${openRequestId}`.as('open_request_id')
+			})
+				.from(queues)
+				.innerJoin(locations, and(
+					eq(locations.organizationId, queues.organizationId),
+					eq(locations.id, queues.locationId)
+				))
+				.innerJoin(services, and(
+					eq(services.organizationId, queues.organizationId),
+					eq(services.id, queues.serviceId),
+					eq(services.locationId, queues.locationId)
+				))
+				.where(and(
+					eq(queues.id, queueId),
+					eq(queues.organizationId, organizationId),
+					eq(queues.isActive, 1),
+					eq(locations.isActive, 1),
+					eq(services.isActive, 1),
+					access,
+					not(exists(currentSession))
+				))
+		).onConflictDoNothing().run();
+
+		if (inserted.meta.changes === 0) {
+			const priorRequest = await db.select({ id: queueSessions.id })
+				.from(queueSessions)
+				.where(and(
+					eq(queueSessions.organizationId, organizationId),
+					eq(queueSessions.queueId, queueId),
+					eq(queueSessions.openRequestId, openRequestId)
+				))
+				.get();
+			if (priorRequest) redirect(303, `/staff/queues?organization=${encodeURIComponent(organizationId)}&opened=1`);
+
+			const existing = await db.select({ id: queueSessions.id })
+				.from(queueSessions)
+				.where(and(
+					eq(queueSessions.organizationId, organizationId),
+					eq(queueSessions.queueId, queueId),
+					sql`${queueSessions.state} IN ('open', 'paused')`
+				))
+				.get();
+			if (existing) return invalid('A session is already open or paused for this queue.', 409);
+			return invalid('The queue changed before the session could open. Refresh the page and try again.', 409);
+		}
+
+		redirect(303, `/staff/queues?organization=${encodeURIComponent(organizationId)}&opened=1`);
+	},
 	setQueueActive: async ({ locals, request, url }) => {
 		if (!locals.user) redirect(303, '/staff/sign-in');
 		const form = await request.formData();

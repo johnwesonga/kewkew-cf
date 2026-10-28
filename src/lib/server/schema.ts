@@ -60,11 +60,14 @@ export const queueSessions = sqliteTable('queue_sessions', {
 	queueId: text('queue_id').notNull(),
 	state: text('state', { enum: ['open', 'paused', 'closed'] }).notNull(),
 	openedAt: text('opened_at').notNull(),
-	closedAt: text('closed_at')
+	closedAt: text('closed_at'),
+	openRequestId: text('open_request_id')
 }, (table) => [
 	uniqueIndex('queue_sessions_one_current_per_queue')
 		.on(table.queueId)
-		.where(sql`${table.state} IN ('open', 'paused')`)
+		.where(sql`${table.state} IN ('open', 'paused')`),
+	uniqueIndex('queue_sessions_open_request_once')
+		.on(table.queueId, table.openRequestId)
 ]);
 
 export const membershipLocationAccess = sqliteTable('membership_location_access', {
