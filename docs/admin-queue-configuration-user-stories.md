@@ -10,7 +10,7 @@ Let organization administrators configure reusable queues for their locations an
 
 This document covers queue discovery and configuration, public queue links, activation, manual session lifecycle, and deletion eligibility. Visitor joining and ticket privacy are specified in [visitor flow user stories](visitor-flow-user-stories.md); staff ticket transitions are specified in [staff admin flow user stories](staff-admin-flow-user-stories.md); recurring schedules and scheduled service starts are specified separately in [queue scheduling user stories](queue-scheduling-user-stories.md).
 
-All stories below are **Planned**. The AQ identifiers follow the Phoenix reference where applicable.
+Each story is marked **Planned** until implemented. The AQ identifiers follow the Phoenix reference where applicable.
 
 ## Shared rules
 
@@ -41,13 +41,14 @@ All stories below are **Planned**. The AQ identifiers follow the Phoenix referen
 
 ## AQ-2: Create a queue
 
-**Status** — Planned
+**Status** — Complete
 
 **User story** — As an organization administrator, I want to create a queue for a location and service so visitors can join the correct line when a session is operating.
 
 ### Acceptance criteria
 
 - An administrator can enter a queue name, choose a location and a service at that location, choose the visitor identity policy, and optionally set active-ticket capacity.
+- Queue names are required and limited to 160 characters.
 - Identity policy supports anonymous tickets or requiring both first and last name.
 - Capacity may be unset (unlimited) or a positive integer. Invalid values and services outside the selected location are rejected with clear validation errors.
 - Queue creation does not open a session. The new queue is inactive until explicitly activated.

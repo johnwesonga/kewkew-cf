@@ -2,10 +2,20 @@
 	import StaffSidebar from '../../../lib/StaffSidebar.svelte';
 	import type { PageProps } from './$types';
 
-	let { data }: PageProps = $props();
+	let { data, form }: PageProps = $props();
 	let locationFilter = $state('all');
 	let serviceFilter = $state('all');
 	let stateFilter = $state('all');
+	let selectedLocationId = $state('');
+	let selectedServiceId = $state('');
+	$effect(() => {
+		selectedLocationId = form?.locationId ?? data.queueLocations[0]?.id ?? '';
+		selectedServiceId = form?.serviceId ?? '';
+	});
+	$effect(() => {
+		const selectedService = data.queueServices.find((service) => service.id === selectedServiceId);
+		if (selectedService && selectedService.locationId !== selectedLocationId) selectedServiceId = '';
+	});
 	let filteredQueues = $derived(data.queues.filter((queue) =>
 		(locationFilter === 'all' || queue.locationId === locationFilter)
 		&& (serviceFilter === 'all' || queue.serviceId === serviceFilter)
@@ -13,6 +23,7 @@
 	));
 	let locations = $derived([...new Map(data.queues.map((queue) => [queue.locationId, queue.locationName])).entries()]);
 	let services = $derived([...new Map(data.queues.map((queue) => [queue.serviceId, queue.serviceName])).entries()].sort((a, b) => a[1].localeCompare(b[1])));
+	let createServices = $derived(data.queueServices.filter((service) => service.locationId === selectedLocationId));
 	let initials = $derived(data.user.name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase() ?? '').join(''));
 </script>
 
@@ -61,6 +72,60 @@
 					</div>
 					<span class="staff-active-pill"><i aria-hidden="true"></i>{data.queues.length} {data.queues.length === 1 ? 'queue' : 'queues'}</span>
 				</header>
+				{#if data.created}<p class="staff-feedback success-message" role="status">Queue created. It is inactive until an administrator activates it.</p>{/if}
+				{#if form?.message}<p class="staff-feedback error-message" role="alert">{form.message}</p>{/if}
+
+				{#if data.organization.role === 'admin'}
+					<section class="staff-card queue-create-card" aria-labelledby="queue-create-title">
+						<div class="staff-card-heading">
+							<div><p class="eyebrow">Queue setup</p><h2 id="queue-create-title">Create a queue</h2></div>
+							<span class="staff-card-tag">Starts inactive</span>
+						</div>
+						{#if data.queueLocations.length === 0}
+							<p class="queue-filter-empty">Add a location before creating a queue.</p>
+						{:else if data.queueServices.length === 0}
+							<p class="queue-filter-empty">Add a service to a location before creating a queue.</p>
+						{:else}
+							<form class="queue-create-form" method="POST" action={`?/createQueue&organization=${encodeURIComponent(data.organization.organizationId)}`}>
+								<input type="hidden" name="createRequestId" value={form?.createRequestId ?? data.createRequestId ?? ''} />
+								<label>Queue name
+									<input name="queueName" maxlength="160" required value={form?.queueName ?? ''} autocomplete="off" />
+								</label>
+								<div class="queue-create-row">
+									<label>Location
+										<select name="locationId" bind:value={selectedLocationId} required>
+											<option value="" disabled>Choose a location</option>
+											{#each data.queueLocations as location}
+												<option value={location.id}>{location.name}{location.isActive === 0 ? ' · Inactive' : ''}</option>
+											{/each}
+										</select>
+									</label>
+									<label>Service
+										<select name="serviceId" required bind:value={selectedServiceId}>
+											<option value="" disabled>Choose a service</option>
+											{#each createServices as service}
+												<option value={service.id}>{service.name}{service.isActive === 0 ? ' · Inactive' : ''}</option>
+											{/each}
+										</select>
+										{#if createServices.length === 0}<span class="queue-label-hint">No services are configured for this location. Choose another location or add a service first.</span>{/if}
+									</label>
+								</div>
+								<div class="queue-create-row">
+									<label>Visitor identity
+										<select name="identityPolicy" required value={form?.identityPolicy ?? 'anonymous'}>
+											<option value="anonymous">Anonymous tickets</option>
+											<option value="name_required">Require first and last name</option>
+										</select>
+									</label>
+									<label>Active ticket capacity <span class="queue-label-hint">Optional; leave blank for unlimited</span>
+										<input type="number" name="activeTicketCapacity" min="1" step="1" value={form?.activeTicketCapacity ?? ''} inputmode="numeric" />
+									</label>
+								</div>
+								<button type="submit" class="queue-create-submit">Create queue</button>
+							</form>
+						{/if}
+					</section>
+				{/if}
 
 				{#if data.queues.length > 0}
 					<section class="staff-card queues-card" aria-labelledby="queue-list-title">

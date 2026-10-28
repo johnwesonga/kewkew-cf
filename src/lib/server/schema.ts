@@ -44,9 +44,13 @@ export const queues = sqliteTable('queues', {
 	identityPolicy: text('identity_policy', { enum: ['anonymous', 'name_required'] }).notNull(),
 	activeTicketCapacity: integer('active_ticket_capacity'),
 	isActive: integer('is_active').notNull(),
+	createdByUserId: text('created_by_user_id'),
+	createRequestId: text('create_request_id'),
 	createdAt: text('created_at').notNull(),
 	updatedAt: text('updated_at').notNull()
-});
+}, (table) => [
+	uniqueIndex('queues_create_request_once').on(table.organizationId, table.createdByUserId, table.createRequestId)
+]);
 
 export const queueSessions = sqliteTable('queue_sessions', {
 	id: text('id').primaryKey(),

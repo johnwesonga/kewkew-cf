@@ -1253,6 +1253,80 @@ select {
 	margin: 18px 0;
 }
 
+.queue-create-card {
+	margin-bottom: 18px;
+}
+
+.queue-create-card .staff-card-heading h2 {
+	margin: 4px 0 0;
+	color: var(--ink);
+	font-size: 18px;
+}
+
+.queue-create-form {
+	display: grid;
+	gap: 14px;
+}
+
+.queue-create-row {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 14px;
+}
+
+.queue-create-form label {
+	display: grid;
+	align-content: start;
+	gap: 6px;
+	color: var(--ink);
+	font-size: 11px;
+	font-weight: 700;
+}
+
+.queue-create-form input,
+.queue-create-form select {
+	box-sizing: border-box;
+	width: 100%;
+	min-height: 42px;
+	padding: 0 11px;
+	border: 1px solid #dce4dd;
+	border-radius: 8px;
+	background: var(--surface);
+	color: var(--ink);
+	font: inherit;
+}
+
+.queue-create-form input:focus,
+.queue-create-form select:focus,
+.queue-filters select:focus {
+	border-color: var(--green);
+	outline: 3px solid rgb(39 111 75 / 14%);
+}
+
+.queue-label-hint {
+	color: var(--muted);
+	font-size: 10px;
+	font-weight: 400;
+}
+
+.queue-create-submit {
+	justify-self: start;
+	min-height: 40px;
+	padding: 0 16px;
+	border: 0;
+	border-radius: 8px;
+	background: var(--green);
+	color: #fff;
+	font: inherit;
+	font-size: 12px;
+	font-weight: 750;
+	cursor: pointer;
+}
+
+.queue-create-submit:hover {
+	background: var(--green-dark);
+}
+
 .queue-filters label {
 	display: grid;
 	gap: 6px;
@@ -1818,6 +1892,11 @@ select {
 }
 
 @media (max-width: 650px) {
+	.queue-create-row,
+	.queue-filters {
+		grid-template-columns: 1fr;
+	}
+
 	.staff-shell .topbar {
 		height: auto;
 		min-height: 66px;

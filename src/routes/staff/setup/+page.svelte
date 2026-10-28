@@ -47,9 +47,9 @@
 				<a class="staff-card staff-setup-card" href={`/staff?organization=${encodeURIComponent(data.organization.id)}#services-title`}>
 					<span class="staff-setup-card-icon" aria-hidden="true">⚒</span><strong>Services</strong><span>{data.serviceCount} {data.serviceCount === 1 ? 'service' : 'services'}</span><small>Manage services across locations</small>
 				</a>
-				<div class="staff-card staff-setup-card unavailable" aria-disabled="true">
-					<span class="staff-setup-card-icon" aria-hidden="true">▤</span><strong>Queues</strong><span>Coming soon</span><small>Queue configuration is not available yet</small>
-				</div>
+				<a class="staff-card staff-setup-card" href={`/staff/queues${query}`}>
+					<span class="staff-setup-card-icon" aria-hidden="true">▤</span><strong>Queues</strong><small>View and configure service queues</small>
+				</a>
 				<a class="staff-card staff-setup-card" href={`/staff/access${query}`}>
 					<span class="staff-setup-card-icon" aria-hidden="true">♙</span><strong>Staff access</strong><span>{data.memberCount} {data.memberCount === 1 ? 'member' : 'members'}</span><small>Invite staff and manage access</small>
 				</a>
@@ -66,6 +66,5 @@
 	.staff-setup-card span:not(.staff-setup-card-icon), .staff-setup-card small { color: var(--muted); font-size: 11px; }
 	.staff-setup-card small { line-height: 1.5; }
 	.staff-setup-card-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: var(--mint); color: var(--green); font-size: 18px; }
-	.staff-setup-card.unavailable { background: #f6f8f6; box-shadow: none; opacity: .68; }
 	@media (max-width: 540px) { .staff-setup-grid { grid-template-columns: 1fr; } }
 </style>
