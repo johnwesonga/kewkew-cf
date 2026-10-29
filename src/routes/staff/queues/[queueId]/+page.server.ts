@@ -3,6 +3,7 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { and, asc, count, eq, exists, sql } from 'drizzle-orm';
 import { createDatabase } from '#lib/server/database';
+import { validateQueueConfiguration } from '#lib/server/queue-rules';
 import { locations, organizationMemberships, organizations, queues, services } from '#lib/server/schema';
 
 export const load: PageServerLoad = async ({ locals, params, url }) => {
@@ -86,19 +87,14 @@ export const actions: Actions = {
 		const invalid = (message: string) => fail(400, { message, ...values });
 
 		if (!organizationId) error(404, 'Queue not found');
-		if (!name || name.length > 160) return invalid('Enter a queue name between 1 and 160 characters.');
-		if (identityPolicy !== 'anonymous' && identityPolicy !== 'name_required') {
-			return invalid('Choose a valid visitor identity policy.');
-		}
-		if (capacityInput && (!/^[1-9]\d*$/.test(capacityInput) || !Number.isSafeInteger(Number(capacityInput)))) {
-			return invalid('Capacity must be a positive whole number, or leave it blank for unlimited capacity.');
-		}
+		const configuration = validateQueueConfiguration({ name, identityPolicy, capacityInput });
+		if (!configuration.valid) return invalid(configuration.message);
 
 		const db = createDatabase((cloudflareEnv as Env).DB);
 		const result = await db.update(queues).set({
-			name,
-			identityPolicy,
-			activeTicketCapacity: capacityInput ? Number(capacityInput) : null,
+			name: configuration.value.name,
+			identityPolicy: configuration.value.identityPolicy,
+			activeTicketCapacity: configuration.value.activeTicketCapacity,
 			updatedAt: new Date().toISOString()
 		}).where(and(
 			eq(queues.id, params.queueId),

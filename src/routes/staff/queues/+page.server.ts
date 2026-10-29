@@ -3,6 +3,7 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { and, asc, count, eq, exists, not, or, sql } from 'drizzle-orm';
 import { createDatabase } from '#lib/server/database';
+import { canOpenQueueSession, resolveSessionTransition, validateQueueConfiguration } from '#lib/server/queue-rules';
 import {
 	locations,
 	membershipLocationAccess,
@@ -221,10 +222,10 @@ export const actions: Actions = {
 			.where(eq(queueSessionEvents.requestId, requestId))
 			.get();
 		if (priorRequest) redirect(303, `/staff/queues?organization=${encodeURIComponent(organizationId)}&sessionUnchanged=1`);
-		if (session.state === 'closed') return invalid('Closed sessions cannot be paused, resumed, or closed again.', 409);
-
-		const nextState = transition === 'pause' ? 'paused' : transition === 'resume' ? 'open' : 'closed';
-		if (session.state === nextState) {
+		const resolvedTransition = resolveSessionTransition(session.state, transition as 'pause' | 'resume' | 'close');
+		if (!resolvedTransition) return invalid('Closed sessions cannot be paused, resumed, or closed again.', 409);
+		const { nextState, changed } = resolvedTransition;
+		if (!changed) {
 			redirect(303, `/staff/queues?organization=${encodeURIComponent(organizationId)}&sessionUnchanged=1`);
 		}
 
@@ -324,7 +325,7 @@ export const actions: Actions = {
 			))
 			.get();
 		if (!eligibleQueue) error(404, 'Queue not found');
-		if (eligibleQueue.queueActive !== 1 || eligibleQueue.locationActive !== 1 || eligibleQueue.serviceActive !== 1) {
+		if (!canOpenQueueSession(eligibleQueue.queueActive, eligibleQueue.locationActive, eligibleQueue.serviceActive)) {
 			return invalid('Activate the queue, location, and service before opening a session.');
 		}
 
@@ -437,14 +438,9 @@ export const actions: Actions = {
 		const invalid = (message: string) => fail(400, { message, ...values });
 
 		if (!organizationId) error(404, 'Workspace not found');
-		if (!name || name.length > 160) return invalid('Enter a queue name between 1 and 160 characters.');
 		if (!locationId || !serviceId) return invalid('Choose a location and service.');
-		if (identityPolicy !== 'anonymous' && identityPolicy !== 'name_required') {
-			return invalid('Choose a valid visitor identity policy.');
-		}
-		if (capacityInput && (!/^[1-9]\d*$/.test(capacityInput) || !Number.isSafeInteger(Number(capacityInput)))) {
-			return invalid('Capacity must be a positive whole number, or leave it blank for unlimited capacity.');
-		}
+		const configuration = validateQueueConfiguration({ name, identityPolicy, capacityInput });
+		if (!configuration.valid) return invalid(configuration.message);
 		if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(createRequestId)) {
 			return invalid('This form has expired. Reload the page and try again.');
 		}
@@ -485,9 +481,9 @@ export const actions: Actions = {
 				organizationId: sql<string>`${organizationId}`.as('organization_id'),
 				locationId: sql<string>`${locationId}`.as('location_id'),
 				serviceId: sql<string>`${serviceId}`.as('service_id'),
-				name: sql<string>`${name}`.as('name'),
-				identityPolicy: sql<'anonymous' | 'name_required'>`${identityPolicy}`.as('identity_policy'),
-				activeTicketCapacity: capacityInput ? sql<number>`${Number(capacityInput)}`.as('active_ticket_capacity') : sql<null>`NULL`.as('active_ticket_capacity'),
+				name: sql<string>`${configuration.value.name}`.as('name'),
+				identityPolicy: sql<'anonymous' | 'name_required'>`${configuration.value.identityPolicy}`.as('identity_policy'),
+				activeTicketCapacity: configuration.value.activeTicketCapacity !== null ? sql<number>`${configuration.value.activeTicketCapacity}`.as('active_ticket_capacity') : sql<null>`NULL`.as('active_ticket_capacity'),
 				isActive: sql<number>`0`.as('is_active'),
 				createdByUserId: sql<string>`${userId}`.as('created_by_user_id'),
 				createRequestId: sql<string>`${createRequestId}`.as('create_request_id'),
