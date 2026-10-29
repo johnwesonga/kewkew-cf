@@ -138,7 +138,7 @@ flowchart LR
 
 ### VF-7: Follow queue position and status changes
 
-**Status** — Planned
+**Status** — In progress
 
 **User story** — As a waiting visitor, I want my ticket page to stay current so I know when my turn is approaching.
 
@@ -149,6 +149,8 @@ flowchart LR
 - When staff call, begin serving, or complete my ticket, the visitor view updates promptly while connected.
 - After a disconnect or refresh, the page reloads current persisted state. Polling or refresh is sufficient for the initial implementation; real-time updates are a separate slice.
 - Updates never expose another visitor's name, contact details, or private tracking credential.
+
+**Implementation note** — The private ticket page reloads its own server-authorized record every five seconds while active and refreshes when a visitor returns to the tab. It announces status changes accessibly, shows a position only for active tickets, and presents distinct next steps for called, serving, completed, cancelled, and no-show states. Polling stops for terminal tickets and persisted state is loaded again on page refresh. This story remains in progress until staff ticket transition actions are implemented and can drive those persisted status changes.
 
 ### VF-8: Leave or cancel my place in line
 
