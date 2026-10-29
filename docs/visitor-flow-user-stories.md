@@ -150,7 +150,7 @@ flowchart LR
 - After a disconnect or refresh, the page reloads current persisted state. Polling or refresh is sufficient for the initial implementation; real-time updates are a separate slice.
 - Updates never expose another visitor's name, contact details, or private tracking credential.
 
-**Implementation note** — The private ticket page reloads its own server-authorized record every five seconds while active and refreshes when a visitor returns to the tab. It announces status changes accessibly, shows a position only for active tickets, and presents distinct next steps for called, serving, completed, cancelled, and no-show states. Polling stops for terminal tickets and persisted state is loaded again on page refresh. This story remains in progress until staff ticket transition actions are implemented and can drive those persisted status changes.
+**Implementation note** — The private ticket page reloads its own server-authorized record every five seconds while waiting, called, serving, or no-show, and refreshes when a visitor returns to the tab. It announces status changes accessibly, shows a position only for active tickets, and presents distinct next steps for called, serving, completed, cancelled, and no-show states. Polling stops for completed and cancelled tickets; no-show remains refreshable because staff may recall it to waiting. This story remains in progress until staff ticket transition actions are implemented and can drive those persisted status changes.
 
 ### VF-8: Leave or cancel my place in line
 
@@ -170,7 +170,7 @@ flowchart LR
 
 ### VF-9: Understand when I am called
 
-**Status** — Planned
+**Status** — In progress
 
 **User story** — As a visitor whose turn has arrived, I want an unmistakable call-to-action on my tracking page so I know what to do next.
 
@@ -181,6 +181,8 @@ flowchart LR
 - If a call expires or is skipped, the page shows the resulting state and next steps without implying the visitor is still being served.
 - The page does not depend on sound, color, or push-notification permission to communicate the called state.
 - SMS or push notifications are not required for this story.
+
+**Implementation note** — When persisted status is `called`, the private page presents a prominent “Your turn is now” message and directs the visitor to the service desk for their service with their ticket number. The callout is announced assertively to assistive technology and remains backed by persisted state through polling and refresh. A dedicated configurable service-instructions field and staff call/skip actions are not implemented yet, so this story remains in progress. A `no_show` update has distinct next-step copy, and the page continues polling so a later recall is visible.
 
 ### VF-10: See a service completion confirmation
 

@@ -2,13 +2,20 @@
 	import { onMount } from "svelte";
 	import { invalidateAll } from "$app/navigation";
 	import type { PageProps } from "./$types";
+	import { getVisitorTicketPresentation } from "#lib/visitor-ticket-presentation";
 	let { data, form }: PageProps = $props();
+	const presentation = $derived(
+		getVisitorTicketPresentation(
+			data.ticket.status,
+			data.ticket.number,
+			data.ticket.serviceName,
+		),
+	);
 	let copyMessage = $state("");
 	let refreshMessage = $state("");
 	let refreshing = false;
-	const activeStatuses = new Set(["waiting", "called", "serving"]);
 	async function refreshTicket() {
-		if (refreshing || !activeStatuses.has(data.ticket.status)) return;
+		if (refreshing || !presentation.shouldPoll) return;
 		refreshing = true;
 		try {
 			await invalidateAll();
@@ -43,24 +50,6 @@
 				"Copy is unavailable in this browser. Use your browser menu to share or bookmark this page.";
 		}
 	}
-	const statusText: Record<string, string> = {
-		waiting: "Waiting",
-		called: "You have been called",
-		serving: "You are being served",
-		completed: "Complete",
-		cancelled: "Cancelled",
-		no_show: "Marked as no-show",
-	};
-	const statusMessage: Record<string, string> = {
-		waiting: "Please wait until staff call your ticket number.",
-		called: "Please go to the service desk and have your ticket number ready.",
-		serving: "Your service is in progress.",
-		completed: "Your service is complete. Thank you for visiting.",
-		cancelled:
-			"This ticket was cancelled. Please speak with staff if you need help.",
-		no_show:
-			"Staff marked this ticket as no-show. Please speak with staff for next steps.",
-	};
 </script>
 
 <svelte:head>
@@ -88,6 +77,7 @@
 
 		<div
 			class="public-queue-state"
+			class:called={presentation.isCalled}
 			class:unavailable={["cancelled", "no_show"].includes(
 				data.ticket.status,
 			)}
@@ -95,20 +85,14 @@
 				data.ticket.status,
 			)}
 			role="status"
-			aria-live="polite"
+			aria-live={presentation.isCalled ? "assertive" : "polite"}
 			aria-atomic="true"
 		>
 			<span aria-hidden="true"></span>
 			<div>
-				<strong
-					>{statusText[data.ticket.status] ??
-						"Status unavailable"}</strong
-				>
-				<p>
-					{statusMessage[data.ticket.status] ??
-						"Check with staff for your ticket status."}
-				</p>
-				{#if data.ticket.position !== null}<p>
+				<strong>{presentation.label}</strong>
+				<p>{presentation.message}</p>
+				{#if presentation.showPosition && data.ticket.position !== null}<p>
 						Position in line: {data.ticket.position}
 					</p>{/if}
 			</div>
