@@ -1581,6 +1581,55 @@ select {
 	line-height: 1.5;
 }
 
+.ticket-cancel-form {
+	display: grid;
+	justify-items: start;
+	gap: 10px;
+	margin-top: 22px;
+	padding-top: 18px;
+	border-top: 1px solid var(--line);
+}
+
+.ticket-cancel-form label {
+	display: inline-flex;
+	align-items: center;
+	gap: 9px;
+	color: var(--ink);
+	font-size: 13px;
+}
+
+.ticket-cancel-form input {
+	width: 18px;
+	height: 18px;
+	accent-color: var(--green);
+}
+
+.ticket-cancel-form button {
+	min-height: 42px;
+	padding: 9px 13px;
+	border: 1px solid #a03c32;
+	border-radius: 9px;
+	background: var(--paper);
+	color: #8b3028;
+	font: inherit;
+	font-size: 13px;
+	font-weight: 750;
+	cursor: pointer;
+}
+
+.ticket-cancel-form button:focus-visible,
+.ticket-cancel-form input:focus-visible {
+	outline: 3px solid var(--green);
+	outline-offset: 3px;
+}
+
+.ticket-cancel-unavailable {
+	margin: 20px 0 0;
+	color: var(--muted);
+	font-size: 12px;
+	line-height: 1.5;
+}
+
 .public-join-error {
 	margin: 0;
 	color: #a03c32;

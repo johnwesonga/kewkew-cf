@@ -274,6 +274,61 @@ export async function revokeTicketTrackingCredentials(
 		.run();
 }
 
+export async function cancelTrackedTicket(
+	db: ReturnType<typeof createDatabase>, tokenDigest: string
+): Promise<'cancelled' | 'already_cancelled' | 'not_waiting' | 'unavailable'> {
+	const credential = await db.select({ ticketId: trackingCredentials.ticketId })
+		.from(trackingCredentials)
+		.where(and(
+			eq(trackingCredentials.tokenDigest, tokenDigest),
+			isNull(trackingCredentials.revokedAt),
+			or(isNull(trackingCredentials.expiresAt), sql`${trackingCredentials.expiresAt} > ${new Date().toISOString()}`)
+		))
+		.get();
+	if (!credential) return 'unavailable';
+
+	const now = new Date().toISOString();
+	const eligibleCredential = exists(db.select({ id: trackingCredentials.id })
+		.from(trackingCredentials)
+		.where(and(
+			eq(trackingCredentials.ticketId, tickets.id),
+			eq(trackingCredentials.tokenDigest, tokenDigest),
+			isNull(trackingCredentials.revokedAt),
+			or(isNull(trackingCredentials.expiresAt), sql`${trackingCredentials.expiresAt} > ${now}`)
+		)));
+	const update = db.update(tickets)
+		.set({ status: 'cancelled', cancelledAt: now, updatedAt: now })
+		.where(and(eq(tickets.id, credential.ticketId), eq(tickets.status, 'waiting'), eligibleCredential));
+	const event = db.insert(ticketEvents).select(db.select({
+		id: sql<string>`${crypto.randomUUID()}`.as('id'),
+		ticketId: tickets.id,
+		fromStatus: sql<'waiting'>`'waiting'`.as('from_status'),
+		toStatus: sql<'cancelled'>`'cancelled'`.as('to_status'),
+		actorType: sql<'visitor'>`'visitor'`.as('actor_type'),
+		actorId: sql<null>`NULL`.as('actor_id'),
+		occurredAt: sql<string>`${now}`.as('occurred_at'),
+		metadata: sql<null>`NULL`.as('metadata'),
+		createdAt: sql<string>`${now}`.as('created_at')
+	}).from(tickets).where(and(
+		eq(tickets.id, credential.ticketId),
+		eq(tickets.status, 'cancelled'),
+		eq(tickets.cancelledAt, now),
+		not(exists(db.select({ id: ticketEvents.id }).from(ticketEvents).where(and(
+			eq(ticketEvents.ticketId, tickets.id),
+			eq(ticketEvents.fromStatus, 'waiting'),
+			eq(ticketEvents.toStatus, 'cancelled'),
+			eq(ticketEvents.actorType, 'visitor')
+		))))
+	))).onConflictDoNothing();
+	await db.batch([update, event] as unknown as Parameters<typeof db.batch>[0]);
+
+	const current = await db.select({ status: tickets.status }).from(tickets)
+		.where(eq(tickets.id, credential.ticketId)).get();
+	if (current?.status === 'cancelled') return 'cancelled';
+	if (!current) return 'unavailable';
+	return 'not_waiting';
+}
+
 export async function getJoinState(db: ReturnType<typeof createDatabase>, publicId: string) {
 	const state = await db.select({
 		identityPolicy: queues.identityPolicy,

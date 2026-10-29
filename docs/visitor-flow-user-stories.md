@@ -154,7 +154,7 @@ flowchart LR
 
 ### VF-8: Leave or cancel my place in line
 
-**Status** — Planned
+**Status** — Complete
 
 **User story** — As a visitor who can no longer wait, I want to leave the queue so staff do not hold my place unnecessarily.
 
@@ -165,6 +165,8 @@ flowchart LR
 - Confirming changes the ticket to a terminal cancelled state and removes it from active queue position calculations.
 - Repeating the action is safe and does not create inconsistent state.
 - The initial policy permits self-cancellation while waiting. If a ticket has been called or service has started, explain when cancellation is unavailable.
+
+**Implementation note** — The private ticket page offers a confirmed leave action only while the ticket is waiting. The server resolves the ticket through its unexpired, non-revoked tracking credential and conditionally changes only a still-waiting ticket to `cancelled`, writing the visitor event in the same D1 batch. A unique partial index and conditional update make duplicate submissions safe. Called and serving tickets display that visitor cancellation is unavailable and direct the visitor to staff; cancellation removes the ticket from active position and capacity counts.
 
 ### VF-9: Understand when I am called
 

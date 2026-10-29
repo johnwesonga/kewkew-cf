@@ -128,6 +128,8 @@ export const ticketEvents = sqliteTable('ticket_events', {
 }, (table) => [
 	uniqueIndex('ticket_events_joined_once').on(table.ticketId)
 		.where(sql`${table.fromStatus} IS NULL AND ${table.toStatus} = 'waiting' AND ${table.actorType} = 'visitor'`),
+	uniqueIndex('ticket_events_visitor_cancel_once').on(table.ticketId)
+		.where(sql`${table.fromStatus} = 'waiting' AND ${table.toStatus} = 'cancelled' AND ${table.actorType} = 'visitor'`),
 	uniqueIndex('ticket_events_by_ticket_time').on(table.ticketId, table.occurredAt, table.id)
 ]);
 
