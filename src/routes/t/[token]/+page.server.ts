@@ -4,7 +4,7 @@ import type { PageServerLoad } from './$types';
 import { eq } from 'drizzle-orm';
 import { createDatabase } from '#lib/server/database';
 import { digestCredential, getTicketByTrackingCredential, isValidCredential } from '#lib/server/visitor-join';
-import { organizations, queues, tickets } from '#lib/server/schema';
+import { organizations, tickets } from '#lib/server/schema';
 
 export const load: PageServerLoad = async ({ params, setHeaders }) => {
 	setHeaders({ 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' });
@@ -12,9 +12,8 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
 	const db = createDatabase((cloudflareEnv as Env).DB);
 	const ticket = await getTicketByTrackingCredential(db, await digestCredential(params.token));
 	if (!ticket) redirect(303, '/t/unavailable');
-	const queueContext = await db.select({ organizationName: organizations.name, publicId: queues.publicId })
+	const queueContext = await db.select({ organizationName: organizations.name })
 		.from(tickets)
-		.innerJoin(queues, eq(queues.id, tickets.queueId))
 		.innerJoin(organizations, eq(organizations.id, tickets.organizationId))
 		.where(eq(tickets.id, ticket.id))
 		.get();
@@ -27,6 +26,6 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
 			organizationName: queueContext?.organizationName ?? 'Queue',
 			serviceName: ticket.serviceName,
 			locationName: ticket.locationName
-			}
+		}
 	};
 };

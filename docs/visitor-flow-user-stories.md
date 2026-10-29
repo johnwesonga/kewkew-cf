@@ -121,7 +121,7 @@ flowchart LR
 
 ### VF-6: Receive a ticket and private tracking page
 
-**Status** — Planned
+**Status** — Complete
 
 **User story** — As a visitor who joined successfully, I want a clear ticket confirmation and a private page so I can verify my place and return to it later.
 
@@ -134,7 +134,7 @@ flowchart LR
 - The page offers a usable way to copy or share the tracking link; the link is never exposed in a public queue listing.
 - Tracking-token lifetime, revocation, and retention behavior are decided before implementation.
 
-**Implementation note** — This story is planned. VF-4 currently provides a basic private ticket page with persisted ticket number, service/location, current status, and position; credential lifecycle controls and copy/share remain follow-up work.
+**Implementation note** — `/t/[token]` resolves only a valid 32-byte random token by its SHA-256 digest and returns the ticket number, queue/service/location, status, and active queue position. The page sends `no-store` and `no-referrer` headers, provides a copy-link control with accessible feedback, and maps malformed, expired, and revoked credentials to the same generic unavailable page. Tracking credentials expire 90 days after creation and can be revoked server-side; completed tickets retain their receipt page until that expiry. Credential digests remain with the ticket record; ticket-history cleanup is a separate retention decision.
 
 ### VF-7: Follow queue position and status changes
 
@@ -204,7 +204,7 @@ flowchart LR
 
 ## Decisions to resolve before the relevant story
 
-- Tracking-link token lifetime, revocation, and behavior after a ticket is completed.
+- Ticket-history cleanup and retention beyond the 90-day tracking-token lifetime.
 - Whether visitor cancellation is allowed after a ticket has been called or service has started; the initial policy above permits it only while waiting.
 - Whether the first release supports only direct queue links or also a location landing page with service selection.
 - Whether to add estimated wait after the initial release, and its fallback when completed-service history is insufficient.

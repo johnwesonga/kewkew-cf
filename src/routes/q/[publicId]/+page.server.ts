@@ -3,7 +3,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { and, eq, or, sql } from 'drizzle-orm';
 import { createDatabase } from '#lib/server/database';
-import { findTrackedCredentialForBrowserTicket, generateCredential, getJoinState, joinVisitorQueue, isValidCredential, digestCredential, findActiveBrowserTicket, findOrCreateTrackingCredential } from '#lib/server/visitor-join';
+import { generateCredential, getJoinState, joinVisitorQueue, isValidCredential, digestCredential, findActiveBrowserTicket, findOrCreateTrackingCredential } from '#lib/server/visitor-join';
 import { locations, organizations, queueSessions, queues, services, tickets } from '#lib/server/schema';
 
 const duplicatePreventionEnabled = !(import.meta.env.DEV && (process.env.BROWSER_DUPLICATE_SIGNUP_PREVENTION ?? 'true') === 'false');
@@ -75,8 +75,12 @@ export const load: PageServerLoad = async ({ params, cookies, setHeaders }) => {
 	if (duplicatePreventionEnabled && queue.sessionId) {
 		const browserToken = cookies.get(browserCookie);
 		if (browserToken && isValidCredential(browserToken)) {
-			existingTicketToken = await findTrackedCredentialForBrowserTicket(db, queue.publicId, await digestCredential(browserToken));
-			if (existingTicketToken) redirect(303, `/t/${existingTicketToken}`);
+			const existingTicket = await findActiveBrowserTicket(db, queue.publicId, await digestCredential(browserToken));
+			if (existingTicket) {
+				existingTicketToken = generateCredential();
+				await findOrCreateTrackingCredential(db, existingTicket.id, await digestCredential(existingTicketToken));
+				redirect(303, `/t/${existingTicketToken}`);
+			}
 		}
 	}
 

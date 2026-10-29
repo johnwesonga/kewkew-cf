@@ -1,6 +1,15 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
 	let { data }: PageProps = $props();
+	let copyMessage = $state('');
+	async function copyTrackingLink() {
+		try {
+			await navigator.clipboard.writeText(window.location.href);
+			copyMessage = 'Private tracking link copied.';
+		} catch {
+			copyMessage = 'Copy is unavailable in this browser. Use your browser menu to share or bookmark this page.';
+		}
+	}
 	const statusText: Record<string, string> = {
 		waiting: 'Waiting', called: 'You have been called', serving: 'You are being served',
 		completed: 'Complete', cancelled: 'Cancelled', no_show: 'Marked as no-show'
@@ -27,6 +36,10 @@
 				{#if data.ticket.position !== null}<p>Position in line: {data.ticket.position}</p>{/if}
 			</div>
 		</div>
-		<p class="public-queue-note">Save or bookmark this private page to check your ticket again. Your ticket number is not a tracking credential.</p>
+		<div class="ticket-tracking-actions">
+			<button type="button" onclick={copyTrackingLink}>Copy private tracking link</button>
+			{#if copyMessage}<p role="status">{copyMessage}</p>{/if}
+		</div>
+		<p class="public-queue-note">Save this private link to check your ticket again. It expires 90 days after signup. Your ticket number is not a tracking credential.</p>
 	</section>
 </main>

@@ -12,6 +12,13 @@ import {
 } from '#lib/server/schema';
 
 const activeStatuses = ['waiting', 'called', 'serving'] as const;
+const trackingLifetimeDays = 90;
+
+function trackingExpiry(createdAt: string): string {
+	const expiresAt = new Date(createdAt);
+	expiresAt.setUTCDate(expiresAt.getUTCDate() + trackingLifetimeDays);
+	return expiresAt.toISOString();
+}
 
 export async function digestCredential(value: string): Promise<string> {
 	const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
@@ -80,7 +87,7 @@ export async function storeTrackingCredential(
 		ticketId,
 		tokenDigest,
 		createdAt: new Date().toISOString(),
-		expiresAt: null,
+		expiresAt: trackingExpiry(new Date().toISOString()),
 		revokedAt: null
 	}).onConflictDoNothing().run();
 }
@@ -212,7 +219,7 @@ export async function joinVisitorQueue(
 		ticketId: tickets.id,
 		tokenDigest: sql<string>`${attemptDigest}`.as('token_digest'),
 		createdAt: sql<string>`${now}`.as('created_at'),
-		expiresAt: sql<null>`NULL`.as('expires_at'),
+		expiresAt: sql<string>`${trackingExpiry(now)}`.as('expires_at'),
 		revokedAt: sql<null>`NULL`.as('revoked_at')
 	}).from(tickets).where(eq(tickets.joinAttemptDigest, attemptDigest))).onConflictDoNothing();
 	const operations: unknown[] = [update, ticketInsert, initialEvent, credentialInsert];
@@ -256,6 +263,15 @@ export async function joinVisitorQueue(
 	if (state.queueActive !== 1 || state.locationActive !== 1 || state.serviceActive !== 1 || state.sessionState !== 'open') return 'unavailable';
 	if (state.activeTicketCapacity !== null && state.activeTicketCount >= state.activeTicketCapacity) return 'full';
 	return 'failed';
+}
+
+export async function revokeTicketTrackingCredentials(
+	db: ReturnType<typeof createDatabase>, ticketId: string, revokedAt = new Date().toISOString()
+): Promise<void> {
+	await db.update(trackingCredentials)
+		.set({ revokedAt })
+		.where(and(eq(trackingCredentials.ticketId, ticketId), isNull(trackingCredentials.revokedAt)))
+		.run();
 }
 
 export async function getJoinState(db: ReturnType<typeof createDatabase>, publicId: string) {

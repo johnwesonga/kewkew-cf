@@ -1539,6 +1539,41 @@ select {
 	background: var(--green-dark);
 }
 
+.ticket-tracking-actions {
+	display: grid;
+	justify-items: start;
+	gap: 8px;
+	margin-top: 22px;
+}
+
+.ticket-tracking-actions button {
+	min-height: 42px;
+	padding: 9px 13px;
+	border: 1px solid var(--green);
+	border-radius: 9px;
+	background: var(--paper);
+	color: var(--green-dark);
+	font: inherit;
+	font-size: 13px;
+	font-weight: 750;
+	cursor: pointer;
+}
+
+.ticket-tracking-actions button:hover {
+	background: var(--mint);
+}
+
+.ticket-tracking-actions button:focus-visible {
+	outline: 3px solid var(--green);
+	outline-offset: 3px;
+}
+
+.ticket-tracking-actions p {
+	margin: 0;
+	color: var(--muted);
+	font-size: 12px;
+}
+
 .public-join-error {
 	margin: 0;
 	color: #a03c32;
