@@ -106,9 +106,9 @@ export const tickets = sqliteTable('tickets', {
 	startedAt: text('started_at'),
 	completedAt: text('completed_at'),
 	cancelledAt: text('cancelled_at'),
-	transitionRequestId: text('transition_request_id'),
 	createdAt: text('created_at').notNull(),
-	updatedAt: text('updated_at').notNull()
+	updatedAt: text('updated_at').notNull(),
+	transitionRequestId: text('transition_request_id')
 }, (table) => [
 	uniqueIndex('tickets_session_number_unique').on(table.queueSessionId, table.ticketNumber),
 	uniqueIndex('tickets_session_sequence_unique').on(table.queueSessionId, table.queueSequence),

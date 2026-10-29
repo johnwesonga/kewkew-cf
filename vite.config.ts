@@ -12,5 +12,8 @@ export default defineConfig({
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			}
 		})
-	]
+	],
+	server: {
+		allowedHosts: ['john-mac']
+	}
 });

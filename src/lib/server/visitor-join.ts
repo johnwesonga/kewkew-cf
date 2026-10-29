@@ -169,7 +169,8 @@ export async function joinVisitorQueue(
 		completedAt: sql<null>`NULL`.as('completed_at'),
 		cancelledAt: sql<null>`NULL`.as('cancelled_at'),
 		createdAt: sql<string>`${now}`.as('created_at'),
-		updatedAt: sql<string>`${now}`.as('updated_at')
+		updatedAt: sql<string>`${now}`.as('updated_at'),
+		transitionRequestId: sql<null>`NULL`.as('transition_request_id')
 	}).from(queueSessions).where(and(
 		eq(queueSessions.state, 'open'),
 		eq(queueSessions.lastJoinAttemptDigest, attemptDigest)
