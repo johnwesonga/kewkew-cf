@@ -22,7 +22,7 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 **Status tracking** — `Complete` means the story's acceptance criteria are implemented; `In progress` means some criteria remain; `Planned` means implementation has not started. Status tracks implementation in this repository, not production release.
 
-**Current implementation note** — SF-1 is Complete. SF-2 through SF-10 remain Planned; the staff ticket board and staff ticket transition flows are not implemented. Unit tests for `staff-ticket-rules.ts` cover domain-policy helpers only and do not establish that those stories are implemented.
+**Current implementation note** — SF-1 and SF-2 are Complete. SF-3 through SF-10 remain Planned; ticket transition commands and real-time synchronization are not implemented. The SF-2 board polls persisted state and can also be refreshed manually.
 
 ### SF-1: Access assigned queues
 
@@ -46,7 +46,9 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 ### SF-2: Monitor a queue
 
-**Status** — Planned
+**Status** — Complete
+
+**Implementation note** — The authorized live board is available from each queue row at `/staff/queues/[queueId]/board`. It loads the current session’s waiting, called, and serving tickets in queue-sequence order, hides names for anonymous tickets, distinguishes empty, paused, closed, and sessionless states, and refreshes every 10 seconds with a manual refresh control. Board access is scoped to active membership and assigned locations.
 
 **User story** — As a queue operator, I want to see waiting visitors and their current states so that I can serve the queue in order.
 

@@ -406,6 +406,7 @@
 												>
 											<td>
 												<div class="queue-row-actions">
+									<a class="queue-edit-link" href={`/staff/queues/${encodeURIComponent(queue.id)}/board?organization=${encodeURIComponent(data.organization.organizationId)}`}>Live board</a>
 													{#if queue.sessionId && queue.transitionRequestId && (queue.sessionState === "open" || queue.sessionState === "paused")}
 														<form method="POST" action={`?/changeSessionState&organization=${encodeURIComponent(data.organization.organizationId)}`}>
 															<input type="hidden" name="queueId" value={queue.id} />
