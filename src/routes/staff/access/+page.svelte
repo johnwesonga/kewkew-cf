@@ -118,6 +118,7 @@
 									>
 								</div>
 								<form
+									id={`membership-access-${member.userId}`}
 									method="POST"
 									action={`?/updateMembership&organization=${encodeURIComponent(data.organization.id)}&member=${encodeURIComponent(member.userId)}`}
 									class="access-form"
@@ -151,24 +152,28 @@
 											one.</small
 										>
 									</fieldset>
+								</form>
+								<div class="access-action-row">
 									<button
 										type="submit"
+										form={`membership-access-${member.userId}`}
 										class="queue-create-submit"
 										>Save access</button
 									>
-								</form>
-								<form
-									method="POST"
-									action={`?/setStatus&organization=${encodeURIComponent(data.organization.id)}&member=${encodeURIComponent(member.userId)}`}
-								>
-									<button
-										class="location-status-button"
-										type="submit"
-										>{member.status === "active"
-											? "Suspend membership"
-											: "Restore membership"}</button
+									<form
+										method="POST"
+										action={`?/setStatus&organization=${encodeURIComponent(data.organization.id)}&member=${encodeURIComponent(member.userId)}`}
 									>
-								</form>
+										<button
+											class:indigo={member.status === "active"}
+											class="location-status-button access-status-button"
+											type="submit"
+											>{member.status === "active"
+												? "Suspend membership"
+												: "Restore membership"}</button
+										>
+									</form>
+								</div>
 							</article>
 						{/each}
 					</div>
@@ -220,6 +225,37 @@
 		display: grid;
 		gap: 14px;
 		margin-top: 18px;
+	}
+	.access-action-row {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 9px;
+		margin-top: 8px;
+	}
+	.access-action-row form {
+		margin: 0;
+	}
+	.access-status-button {
+		min-height: 40px;
+		padding: 0 16px;
+		border: 0;
+		border-radius: 8px;
+		font: inherit;
+		font-size: 12px;
+		font-weight: 750;
+	}
+	.access-status-button.indigo {
+		background: #4f46e5;
+		color: white;
+	}
+	.access-status-button.indigo:hover {
+		background: #4338ca;
+		color: white;
+	}
+	.access-status-button.indigo:focus-visible {
+		outline: 3px solid rgb(99 102 241 / 32%);
+		outline-offset: 2px;
 	}
 	.access-form > label {
 		display: grid;
