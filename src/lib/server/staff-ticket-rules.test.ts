@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	canCallNext,
 	isActiveStaffTicket,
 	recallQueueSequence,
 	resolveStaffTicketTransition,
@@ -55,6 +56,20 @@ describe('selectNextWaitingTicket', () => {
 			{ status: 'called', queueSequence: 1 },
 			{ status: 'serving', queueSequence: 2 }
 		])).toBeNull();
+	});
+});
+
+describe('canCallNext', () => {
+	it.each(['open', 'paused'] as const)('allows calling when a %s session has a waiting ticket', (state) => {
+		expect(canCallNext(state, [{ status: 'waiting' }])).toBe(true);
+	});
+
+	it.each(['closed', null] as const)('disables calling when the session is %s', (state) => {
+		expect(canCallNext(state, [{ status: 'waiting' }])).toBe(false);
+	});
+
+	it('disables calling when no ticket is waiting', () => {
+		expect(canCallNext('open', [{ status: 'called' }])).toBe(false);
 	});
 });
 

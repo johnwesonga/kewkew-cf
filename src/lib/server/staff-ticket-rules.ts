@@ -31,6 +31,13 @@ export function selectNextWaitingTicket<T extends { status: StaffTicketStatus; q
 	return next;
 }
 
+export function canCallNext(
+	sessionState: 'open' | 'paused' | 'closed' | null,
+	tickets: readonly { status: StaffTicketStatus }[]
+): boolean {
+	return (sessionState === 'open' || sessionState === 'paused') && tickets.some((ticket) => ticket.status === 'waiting');
+}
+
 export function recallQueueSequence(nextQueueSequence: number): number | null {
 	if (!Number.isSafeInteger(nextQueueSequence) || nextQueueSequence < 1) return null;
 	return nextQueueSequence;

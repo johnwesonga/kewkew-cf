@@ -22,7 +22,7 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 **Status tracking** — `Complete` means the story's acceptance criteria are implemented; `In progress` means some criteria remain; `Planned` means implementation has not started. Status tracks implementation in this repository, not production release.
 
-**Current implementation note** — SF-1 and SF-2 are Complete. SF-3 through SF-10 remain Planned; ticket transition commands and real-time synchronization are not implemented. The SF-2 board polls persisted state and can also be refreshed manually.
+**Current implementation note** — SF-1 through SF-3 are Complete. SF-4 through SF-10 remain Planned; additional ticket transition commands and real-time synchronization are not implemented. The SF-2 board polls persisted state and can also be refreshed manually.
 
 ### SF-1: Access assigned queues
 
@@ -64,7 +64,9 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 ### SF-3: Call the next visitor
 
-**Status** — Planned
+**Status** — Complete
+
+**Implementation note** — The queue board provides a Call next visitor command for open or paused sessions. The server rechecks active membership and location access, conditionally claims the lowest-sequence waiting ticket, records `calledAt` and a staff-attributed event in one D1 batch, and uses a unique request ID to make retries idempotent. The board disables the command and explains when nobody is waiting.
 
 **User story** — As a queue operator, I want to call the next waiting visitor so that service follows queue order.
 

@@ -106,13 +106,15 @@ export const tickets = sqliteTable('tickets', {
 	startedAt: text('started_at'),
 	completedAt: text('completed_at'),
 	cancelledAt: text('cancelled_at'),
+	transitionRequestId: text('transition_request_id'),
 	createdAt: text('created_at').notNull(),
 	updatedAt: text('updated_at').notNull()
 }, (table) => [
 	uniqueIndex('tickets_session_number_unique').on(table.queueSessionId, table.ticketNumber),
 	uniqueIndex('tickets_session_sequence_unique').on(table.queueSessionId, table.queueSequence),
 	uniqueIndex('tickets_join_attempt_unique').on(table.queueSessionId, table.joinAttemptDigest),
-	uniqueIndex('tickets_by_session_status_sequence').on(table.queueSessionId, table.status, table.queueSequence)
+	uniqueIndex('tickets_by_session_status_sequence').on(table.queueSessionId, table.status, table.queueSequence),
+	uniqueIndex('tickets_transition_request_unique').on(table.transitionRequestId).where(sql`${table.transitionRequestId} IS NOT NULL`)
 ]);
 
 export const ticketEvents = sqliteTable('ticket_events', {

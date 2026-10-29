@@ -4,7 +4,7 @@
 	import StaffSidebar from '#lib/StaffSidebar.svelte';
 	import type { PageProps } from './$types';
 
-	let { data }: PageProps = $props();
+	let { data, form }: PageProps = $props();
 	let initials = $derived(data.user.name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase() ?? '').join(''));
 	let organizationQuery = $derived(`?organization=${encodeURIComponent(data.organization.organizationId)}`);
 
@@ -60,12 +60,22 @@
 						<span class="queue-board-session" class:paused={data.sessionState === 'paused'} class:closed={data.sessionState === 'closed'}>
 							{data.sessionState ? data.sessionState[0]!.toUpperCase() + data.sessionState.slice(1) : 'No session'}
 						</span>
+						{#if data.sessionId && data.callRequestId}
+							<form class="queue-board-call-form" method="POST" action={`?/callNext&organization=${encodeURIComponent(data.organization.organizationId)}`}>
+								<input type="hidden" name="sessionId" value={data.sessionId} />
+								<input type="hidden" name="requestId" value={data.callRequestId} />
+								<button class="queue-create-submit" type="submit" disabled={!data.canCallNext}>Call next visitor</button>
+							</form>
+						{/if}
 						<button class="queue-edit-link" type="button" onclick={() => invalidateAll()}>Refresh</button>
 						{#if data.organization.role === 'admin'}
 							<a class="queue-edit-link" href={`/staff/queues/${encodeURIComponent(data.queue.id)}${organizationQuery}`}>Edit queue</a>
 						{/if}
 					</div>
 				</header>
+				{#if form?.message}<p class="staff-feedback error-message" role="alert">{form.message}</p>{/if}
+				{#if data.calledTicket}<p class="staff-feedback success-message" role="status">{data.replayedCall ? 'This call was already processed.' : 'Called ticket'} #{data.calledTicket}.</p>{/if}
+				{#if data.sessionId && !data.canCallNext}<p class="queue-board-action-hint">Nobody is waiting; there is no visitor to call.</p>{/if}
 
 				{#if data.tickets.length === 0}
 					<section class="staff-card queue-board-empty" role="status">
@@ -97,3 +107,9 @@
 		</main>
 	</div>
 </div>
+
+<style>
+	.queue-board-call-form { margin: 0; }
+	.queue-board-call-form button:disabled { opacity: .55; cursor: not-allowed; }
+	.queue-board-action-hint { margin: -12px 0 18px; color: var(--muted); font-size: 12px; }
+</style>
