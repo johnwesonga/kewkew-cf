@@ -1,4 +1,4 @@
-import { integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 
 export const organizations = sqliteTable('organizations', {
@@ -62,7 +62,10 @@ export const queueSessions = sqliteTable('queue_sessions', {
 	openedAt: text('opened_at').notNull(),
 	closedAt: text('closed_at'),
 	openRequestId: text('open_request_id'),
-	transitionRequestId: text('transition_request_id')
+	transitionRequestId: text('transition_request_id'),
+	nextTicketNumber: integer('next_ticket_number').notNull().default(1),
+	nextQueueSequence: integer('next_queue_sequence').notNull().default(1),
+	lastJoinAttemptDigest: text('last_join_attempt_digest')
 }, (table) => [
 	uniqueIndex('queue_sessions_one_current_per_queue')
 		.on(table.queueId)
@@ -84,6 +87,69 @@ export const queueSessionEvents = sqliteTable('queue_session_events', {
 }, (table) => [
 	uniqueIndex('queue_session_events_request_once').on(table.requestId),
 	uniqueIndex('queue_session_events_by_session_time').on(table.sessionId, table.occurredAt, table.id)
+]);
+
+export const tickets = sqliteTable('tickets', {
+	id: text('id').primaryKey(),
+	organizationId: text('organization_id').notNull(),
+	queueId: text('queue_id').notNull(),
+	queueSessionId: text('queue_session_id').notNull(),
+	ticketNumber: integer('ticket_number').notNull(),
+	queueSequence: integer('queue_sequence').notNull(),
+	joinAttemptDigest: text('join_attempt_digest').notNull(),
+	status: text('status', { enum: ['waiting', 'called', 'serving', 'completed', 'cancelled', 'no_show'] }).notNull(),
+	firstName: text('first_name'),
+	lastName: text('last_name'),
+	joinedAt: text('joined_at').notNull(),
+	calledAt: text('called_at'),
+	startedAt: text('started_at'),
+	completedAt: text('completed_at'),
+	cancelledAt: text('cancelled_at'),
+	createdAt: text('created_at').notNull(),
+	updatedAt: text('updated_at').notNull()
+}, (table) => [
+	uniqueIndex('tickets_session_number_unique').on(table.queueSessionId, table.ticketNumber),
+	uniqueIndex('tickets_session_sequence_unique').on(table.queueSessionId, table.queueSequence),
+	uniqueIndex('tickets_join_attempt_unique').on(table.queueSessionId, table.joinAttemptDigest),
+	uniqueIndex('tickets_by_session_status_sequence').on(table.queueSessionId, table.status, table.queueSequence)
+]);
+
+export const ticketEvents = sqliteTable('ticket_events', {
+	id: text('id').primaryKey(),
+	ticketId: text('ticket_id').notNull(),
+	fromStatus: text('from_status', { enum: ['waiting', 'called', 'serving', 'completed', 'cancelled', 'no_show'] }),
+	toStatus: text('to_status', { enum: ['waiting', 'called', 'serving', 'completed', 'cancelled', 'no_show'] }).notNull(),
+	actorType: text('actor_type', { enum: ['visitor', 'staff', 'system'] }).notNull(),
+	actorId: text('actor_id'),
+	occurredAt: text('occurred_at').notNull(),
+	metadata: text('metadata'),
+	createdAt: text('created_at').notNull()
+}, (table) => [
+	uniqueIndex('ticket_events_joined_once').on(table.ticketId)
+		.where(sql`${table.fromStatus} IS NULL AND ${table.toStatus} = 'waiting' AND ${table.actorType} = 'visitor'`),
+	uniqueIndex('ticket_events_by_ticket_time').on(table.ticketId, table.occurredAt, table.id)
+]);
+
+export const trackingCredentials = sqliteTable('tracking_credentials', {
+	id: text('id').primaryKey(),
+	ticketId: text('ticket_id').notNull(),
+	tokenDigest: text('token_digest').notNull(),
+	createdAt: text('created_at').notNull(),
+	expiresAt: text('expires_at'),
+	revokedAt: text('revoked_at')
+}, (table) => [
+	uniqueIndex('tracking_credentials_digest_unique').on(table.tokenDigest),
+	index('tracking_credentials_by_ticket').on(table.ticketId)
+]);
+
+export const browserTicketClaims = sqliteTable('browser_ticket_claims', {
+	queueSessionId: text('queue_session_id').notNull(),
+	ticketId: text('ticket_id').notNull(),
+	credentialDigest: text('credential_digest').notNull(),
+	createdAt: text('created_at').notNull()
+}, (table) => [
+	primaryKey({ columns: [table.queueSessionId, table.credentialDigest] }),
+	index('browser_ticket_claims_by_ticket').on(table.ticketId)
 ]);
 
 export const membershipLocationAccess = sqliteTable('membership_location_access', {

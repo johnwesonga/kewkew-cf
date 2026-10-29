@@ -59,7 +59,7 @@ flowchart LR
 
 ### VF-2: Understand whether a queue is open
 
-**Status** — In progress
+**Status** — Complete
 
 **User story** — As a visitor, I want to know whether I can join before entering details so I do not waste time on an unavailable queue.
 
@@ -70,7 +70,7 @@ flowchart LR
 - If the queue changes state after the page loads, the server rejects a now-invalid join and provides a useful explanation.
 - Closed-state copy may include configured reopening information when available; it must not invent an opening time.
 
-**Implementation note** — The public page now distinguishes inactive queue, location, and service states, a paused session, and the absence of an open session. It displays no join control when signup is unavailable. This story remains in progress because the visitor join route, ticket/capacity records, the enabled join action, and the server-side recheck during submission are part of the pending ticket flow (VF-4 and VF-5).
+**Implementation note** — The public page distinguishes inactive queue, location, and service states, a paused session, and the absence of an open session. It displays an enabled join action only while signup is available, including remaining within configured capacity, and the server rechecks those conditions during submission.
 
 ### VF-3: Select a service when a location offers more than one
 
@@ -89,7 +89,7 @@ flowchart LR
 
 ### VF-4: Join an anonymous queue
 
-**Status** — Planned
+**Status** — Complete
 
 **User story** — As a visitor using an anonymous queue, I want to receive a number without sharing my name so I can wait with minimal data collection.
 
@@ -100,6 +100,8 @@ flowchart LR
 - Invalid queue data or an unavailable queue creates no ticket and produces an actionable error.
 - A slow connection, retry, or double tap does not create duplicate tickets for the same join attempt.
 - The ticket number is never used as the authorization credential for private tracking.
+
+**Implementation note** — `/q/[publicId]` provides a no-name, no-contact-data join action for anonymous queues. D1 migration `0012_visitor_tickets.sql` adds tickets, event history, private tracking credentials, browser claims, and per-session counters. A conditional session update and D1 batch enforce open-session, active queue/location/service, capacity, and repeat-attempt checks before creating the ticket, initial `waiting` event, tracking credential digest, and browser claim. The returned `/t/[token]` URL is unguessable and its raw token is not stored. A server-side development-only switch (`BROWSER_DUPLICATE_SIGNUP_PREVENTION=false`) bypasses same-browser duplicate prevention for local testing; production ignores that bypass.
 
 ### VF-5: Join a queue that requires first and last name
 
@@ -129,6 +131,8 @@ flowchart LR
 - A malformed, expired, or revoked token shows an unavailable state without revealing whether other tickets exist.
 - The page offers a usable way to copy or share the tracking link; the link is never exposed in a public queue listing.
 - Tracking-token lifetime, revocation, and retention behavior are decided before implementation.
+
+**Implementation note** — This story is planned. VF-4 currently provides a basic private ticket page with persisted ticket number, service/location, current status, and position; credential lifecycle controls and copy/share remain follow-up work.
 
 ### VF-7: Follow queue position and status changes
 

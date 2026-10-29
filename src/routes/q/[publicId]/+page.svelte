@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
 
-	let { data }: PageProps = $props();
+	let { data, form }: PageProps = $props();
 </script>
 
 <svelte:head>
@@ -37,11 +37,26 @@
 						<p>This service is currently unavailable. Please check back later.</p>
 					{:else if data.unavailableReason === "session_paused"}
 						<p>Signup is paused while staff manage the line. Please check back later.</p>
+					{:else if data.unavailableReason === "queue_full"}
+						<p>This queue has reached its current capacity. Please check with staff for your next step.</p>
 					{:else}
 						<p>This queue does not have an open signup session right now.</p>
 					{/if}
 				</div>
 			</div>
+		{/if}
+		{#if data.identityPolicy === "anonymous"}
+			{#if data.signupAvailable}
+				<form method="POST" action="?/join" class="public-join-form">
+					<input type="hidden" name="attemptToken" value={form?.attemptToken ?? data.attemptToken} />
+					<button type="submit">Join this queue</button>
+					{#if form?.joinMessage}<p class="public-join-error" role="alert">{form.joinMessage}</p>{/if}
+				</form>
+			{:else if data.unavailableReason === "queue_full"}
+				<p class="public-join-error" role="status">This queue has reached capacity. Please check with staff for your next step.</p>
+			{/if}
+		{:else}
+			<p class="public-join-error" role="status">This queue requires first and last name. Please ask staff to assist.</p>
 		{/if}
 		{#if data.serviceChoices.length > 1}
 			<details class="public-service-choices">
