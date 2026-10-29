@@ -77,7 +77,7 @@ export const queueSessionEvents = sqliteTable('queue_session_events', {
 	queueId: text('queue_id').notNull(),
 	sessionId: text('session_id').notNull(),
 	fromState: text('from_state', { enum: ['open', 'paused'] }).notNull(),
-	toState: text('to_state', { enum: ['open', 'paused'] }).notNull(),
+	toState: text('to_state', { enum: ['open', 'paused', 'closed'] }).notNull(),
 	actorUserId: text('actor_user_id').notNull(),
 	requestId: text('request_id').notNull(),
 	occurredAt: text('occurred_at').notNull()

@@ -138,7 +138,7 @@ Each story is marked **Planned** until implemented. The AQ identifiers follow th
 
 ## AQ-8: Close a session
 
-**Status** — Planned
+**Status** — In progress
 
 **User story** — As an authorized operator or administrator, I want to close a completed session so its final state is preserved and a later operating period can start cleanly.
 
@@ -150,6 +150,8 @@ Each story is marked **Planned** until implemented. The AQ identifiers follow th
 - Closure preserves session and ticket history. Existing private tracking pages continue to show their final ticket state.
 - A later session is opened explicitly by an authorized user (or through the separate recurring schedule flow) and begins its ticket sequence at 1.
 - Conditional state changes prevent a close request racing with a ticket transition from closing a session with active tickets.
+
+**Implementation note** — Administrators and assigned operators can close an open or paused session. The conditional state update records a close event and timestamp, releases the queue for a later session, and prevents further session lifecycle transitions. Ticket tables and ticket operations do not exist yet, so the active-ticket guard, ticket transition race protection, and private tracking history must be integrated when visitor and staff ticket flows are implemented.
 
 ## AQ-9: Delete a queue with no session history
 

@@ -170,7 +170,7 @@ export const actions: Actions = {
 		const requestId = String(form.get('requestId') ?? '');
 		const transition = String(form.get('transition') ?? '');
 		const invalid = (message: string, status = 400) => fail(status, { message });
-		if (!organizationId || !queueId || !sessionId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId) || (transition !== 'pause' && transition !== 'resume')) {
+		if (!organizationId || !queueId || !sessionId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId) || !['pause', 'resume', 'close'].includes(transition)) {
 			return invalid('This session form has expired. Reload the page and try again.');
 		}
 
@@ -216,22 +216,21 @@ export const actions: Actions = {
 			))
 			.get();
 		if (!session) error(404, 'Session not found');
-		if (session.state === 'closed') return invalid('Closed sessions cannot be paused or resumed.', 409);
-
-		const nextState = transition === 'pause' ? 'paused' : 'open';
-		if (session.state === nextState) {
-			redirect(303, `/staff/queues?organization=${encodeURIComponent(organizationId)}&sessionUnchanged=1`);
-		}
-
 		const priorRequest = await db.select({ id: queueSessionEvents.id })
 			.from(queueSessionEvents)
 			.where(eq(queueSessionEvents.requestId, requestId))
 			.get();
 		if (priorRequest) redirect(303, `/staff/queues?organization=${encodeURIComponent(organizationId)}&sessionUnchanged=1`);
+		if (session.state === 'closed') return invalid('Closed sessions cannot be paused, resumed, or closed again.', 409);
+
+		const nextState = transition === 'pause' ? 'paused' : transition === 'resume' ? 'open' : 'closed';
+		if (session.state === nextState) {
+			redirect(303, `/staff/queues?organization=${encodeURIComponent(organizationId)}&sessionUnchanged=1`);
+		}
 
 		const now = new Date().toISOString();
 		const update = db.update(queueSessions)
-			.set({ state: nextState, transitionRequestId: requestId })
+			.set({ state: nextState, transitionRequestId: requestId, closedAt: nextState === 'closed' ? now : null })
 			.where(and(
 				eq(queueSessions.id, sessionId),
 				eq(queueSessions.queueId, queueId),
