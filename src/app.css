@@ -1492,6 +1492,60 @@ select {
 	line-height: 1.6;
 }
 
+.public-join-form {
+	display: grid;
+	gap: 12px;
+	margin-top: 22px;
+}
+
+.public-join-form label {
+	color: var(--ink);
+	font-size: 13px;
+	font-weight: 700;
+}
+
+.public-join-form input[type="text"] {
+	box-sizing: border-box;
+	width: 100%;
+	min-height: 46px;
+	padding: 10px 12px;
+	border: 1px solid var(--line);
+	border-radius: 9px;
+	background: var(--paper);
+	color: var(--ink);
+	font: inherit;
+}
+
+.public-join-form input:focus-visible,
+.public-join-form button:focus-visible {
+	outline: 3px solid var(--green);
+	outline-offset: 2px;
+}
+
+.public-join-form button {
+	min-height: 46px;
+	margin-top: 4px;
+	padding: 10px 16px;
+	border: 0;
+	border-radius: 9px;
+	background: var(--green);
+	color: white;
+	font: inherit;
+	font-weight: 750;
+	cursor: pointer;
+}
+
+.public-join-form button:hover {
+	background: var(--green-dark);
+}
+
+.public-join-error {
+	margin: 0;
+	color: #a03c32;
+	font-size: 12px;
+	line-height: 1.5;
+}
+
 .public-queue-home-link {
 	display: inline-flex;
 	margin-top: 20px;

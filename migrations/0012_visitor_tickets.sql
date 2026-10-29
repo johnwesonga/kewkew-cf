@@ -13,6 +13,7 @@ CREATE TABLE tickets (
 	status TEXT NOT NULL CHECK (status IN ('waiting', 'called', 'serving', 'completed', 'cancelled', 'no_show')),
 	first_name TEXT,
 	last_name TEXT,
+	identity_policy TEXT NOT NULL CHECK (identity_policy IN ('anonymous', 'name_required')),
 	joined_at TEXT NOT NULL,
 	called_at TEXT,
 	started_at TEXT,
@@ -24,7 +25,10 @@ CREATE TABLE tickets (
 	UNIQUE (queue_session_id, queue_sequence),
 	UNIQUE (queue_session_id, join_attempt_digest),
 	FOREIGN KEY (organization_id, queue_id) REFERENCES queues (organization_id, id) ON DELETE RESTRICT,
-	CHECK ((first_name IS NULL AND last_name IS NULL) OR (length(trim(first_name)) > 0 AND length(trim(last_name)) > 0))
+	CHECK (
+		(identity_policy = 'anonymous' AND first_name IS NULL AND last_name IS NULL)
+		OR (identity_policy = 'name_required' AND length(trim(first_name)) > 0 AND length(trim(last_name)) > 0)
+	)
 );
 
 CREATE INDEX tickets_by_session_status_sequence

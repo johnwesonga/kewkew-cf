@@ -105,7 +105,7 @@ flowchart LR
 
 ### VF-5: Join a queue that requires first and last name
 
-**Status** — Planned
+**Status** — Complete
 
 **User story** — As a visitor at a service that matches tickets to people, I want to provide my first and last name so staff can identify me when my number is called.
 
@@ -116,6 +116,8 @@ flowchart LR
 - The server validates both fields even if a client bypasses the form.
 - Successful submission stores the name and confirms the ticket without unnecessarily repeating private details.
 - The server reads the identity policy from the selected queue; a client cannot bypass a required name by changing request parameters.
+
+**Implementation note** — The public queue page renders required first- and last-name fields only when the server reports `name_required`. The join action trims and validates both names, preserves entered values and field errors after rejection, rejects names submitted to anonymous queues, and derives policy again from D1. The conditional ticket insert stores the policy and names together; the migration constraint enforces that anonymous tickets have no names and name-required tickets have both nonblank names. Successful confirmation avoids displaying the visitor's name.
 
 ### VF-6: Receive a ticket and private tracking page
 

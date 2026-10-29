@@ -56,7 +56,21 @@
 				<p class="public-join-error" role="status">This queue has reached capacity. Please check with staff for your next step.</p>
 			{/if}
 		{:else}
-			<p class="public-join-error" role="status">This queue requires first and last name. Please ask staff to assist.</p>
+			{#if data.signupAvailable}
+				<form method="POST" action="?/join" class="public-join-form public-join-name-form">
+					<input type="hidden" name="attemptToken" value={form?.attemptToken ?? data.attemptToken} />
+					<label for="visitor-first-name">First name</label>
+					<input id="visitor-first-name" name="firstName" type="text" autocomplete="given-name" maxlength="100" required value={form?.firstName ?? ""} aria-invalid={form?.fieldErrors?.firstName ? "true" : undefined} aria-describedby={form?.fieldErrors?.firstName ? "visitor-first-name-error" : undefined} />
+					{#if form?.fieldErrors?.firstName}<span id="visitor-first-name-error" class="public-join-error" role="alert">{form.fieldErrors.firstName}</span>{/if}
+					<label for="visitor-last-name">Last name</label>
+					<input id="visitor-last-name" name="lastName" type="text" autocomplete="family-name" maxlength="100" required value={form?.lastName ?? ""} aria-invalid={form?.fieldErrors?.lastName ? "true" : undefined} aria-describedby={form?.fieldErrors?.lastName ? "visitor-last-name-error" : undefined} />
+					{#if form?.fieldErrors?.lastName}<span id="visitor-last-name-error" class="public-join-error" role="alert">{form.fieldErrors.lastName}</span>{/if}
+					<button type="submit">Join this queue</button>
+					{#if form?.joinMessage}<p class="public-join-error" role="alert">{form.joinMessage}</p>{/if}
+				</form>
+			{:else}
+				<p class="public-join-error" role="status">This queue requires first and last name. Please ask staff to assist.</p>
+			{/if}
 		{/if}
 		{#if data.serviceChoices.length > 1}
 			<details class="public-service-choices">

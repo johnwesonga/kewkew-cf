@@ -94,12 +94,14 @@ export async function findOrCreateTrackingCredential(
 	await storeTrackingCredential(db, ticketId, tokenDigest);
 }
 
-export async function joinAnonymousQueue(
+export async function joinVisitorQueue(
 	db: ReturnType<typeof createDatabase>,
-	args: { publicId: string; attemptToken: string; browserDigest?: string }
+	args: { publicId: string; attemptToken: string; browserDigest?: string; firstName?: string; lastName?: string }
 ): Promise<'created_or_replayed' | 'browser_already_joined' | 'name_required' | 'unavailable' | 'full' | 'failed'> {
 	const { publicId, attemptToken, browserDigest } = args;
 	const attemptDigest = await digestCredential(attemptToken);
+	const firstName = args.firstName?.trim() || null;
+	const lastName = args.lastName?.trim() || null;
 	const eligibleQueue = exists(db.select({ id: queues.id })
 		.from(queues)
 		.innerJoin(locations, and(
@@ -115,7 +117,10 @@ export async function joinAnonymousQueue(
 			eq(queues.publicId, publicId),
 			eq(queues.id, queueSessions.queueId),
 			eq(queues.organizationId, queueSessions.organizationId),
-			eq(queues.identityPolicy, 'anonymous'),
+			or(
+				and(eq(queues.identityPolicy, 'anonymous'), isNull(sql`${firstName}`), isNull(sql`${lastName}`)),
+				and(eq(queues.identityPolicy, 'name_required'), not(isNull(sql`${firstName}`)), not(isNull(sql`${lastName}`)), sql`length(trim(${firstName})) > 0 AND length(trim(${lastName})) > 0`)
+			),
 			eq(queues.isActive, 1),
 			eq(locations.isActive, 1),
 			eq(services.isActive, 1),
@@ -167,8 +172,11 @@ export async function joinAnonymousQueue(
 		queueSequence: sql<number>`${queueSessions.nextQueueSequence} - 1`.as('queue_sequence'),
 		joinAttemptDigest: sql<string>`${attemptDigest}`.as('join_attempt_digest'),
 		status: sql<'waiting'>`'waiting'`.as('status'),
-		firstName: sql<null>`NULL`.as('first_name'),
-		lastName: sql<null>`NULL`.as('last_name'),
+		firstName: sql<string | null>`${firstName}`.as('first_name'),
+		lastName: sql<string | null>`${lastName}`.as('last_name'),
+		identityPolicy: sql<'anonymous' | 'name_required'>`(
+			SELECT identity_policy FROM queues WHERE id = ${queueSessions.queueId}
+		)`.as('identity_policy'),
 		joinedAt: sql<string>`${now}`.as('joined_at'),
 		calledAt: sql<null>`NULL`.as('called_at'),
 		startedAt: sql<null>`NULL`.as('started_at'),
@@ -244,7 +252,7 @@ export async function joinAnonymousQueue(
 
 	const state = await getJoinState(db, publicId);
 	if (!state) return 'unavailable';
-	if (state.identityPolicy !== 'anonymous') return 'name_required';
+	if (state.identityPolicy === 'name_required' && (!firstName || !lastName)) return 'name_required';
 	if (state.queueActive !== 1 || state.locationActive !== 1 || state.serviceActive !== 1 || state.sessionState !== 'open') return 'unavailable';
 	if (state.activeTicketCapacity !== null && state.activeTicketCount >= state.activeTicketCapacity) return 'full';
 	return 'failed';

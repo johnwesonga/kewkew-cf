@@ -3,7 +3,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { and, eq, or, sql } from 'drizzle-orm';
 import { createDatabase } from '#lib/server/database';
-import { findTrackedCredentialForBrowserTicket, generateCredential, getJoinState, joinAnonymousQueue, isValidCredential, digestCredential, findActiveBrowserTicket, findOrCreateTrackingCredential } from '#lib/server/visitor-join';
+import { findTrackedCredentialForBrowserTicket, generateCredential, getJoinState, joinVisitorQueue, isValidCredential, digestCredential, findActiveBrowserTicket, findOrCreateTrackingCredential } from '#lib/server/visitor-join';
 import { locations, organizations, queueSessions, queues, services, tickets } from '#lib/server/schema';
 
 const duplicatePreventionEnabled = !(import.meta.env.DEV && (process.env.BROWSER_DUPLICATE_SIGNUP_PREVENTION ?? 'true') === 'false');
@@ -108,13 +108,39 @@ export const load: PageServerLoad = async ({ params, cookies, setHeaders }) => {
 
 export const actions: Actions = {
 	join: async ({ params, request, cookies, url }) => {
+		const formError = (status: number, message: string, attemptToken: string, extra: {
+			firstName?: string;
+			lastName?: string;
+			fieldErrors?: { firstName?: string; lastName?: string };
+		} = {}) => fail(status, {
+			joinMessage: message,
+			attemptToken,
+			firstName: extra.firstName ?? '',
+			lastName: extra.lastName ?? '',
+			fieldErrors: extra.fieldErrors ?? {}
+		});
 		const formData = await request.formData();
 		const attemptToken = String(formData.get('attemptToken') ?? '');
-		if (!isValidCredential(attemptToken)) return fail(400, { joinMessage: 'Refresh this page and try again.', attemptToken: generateCredential() });
+		if (!isValidCredential(attemptToken)) return formError(400, 'Refresh this page and try again.', generateCredential());
 		const db = createDatabase((cloudflareEnv as Env).DB);
 		const state = await getJoinState(db, params.publicId.toLowerCase());
-		if (!state) return fail(404, { joinMessage: 'This queue is no longer available.', attemptToken });
-		if (state.identityPolicy !== 'anonymous') return fail(400, { joinMessage: 'This queue requires first and last name. Please ask staff to assist.', attemptToken });
+		if (!state) return formError(404, 'This queue is no longer available.', attemptToken);
+		const rawFirstName = String(formData.get('firstName') ?? '');
+		const rawLastName = String(formData.get('lastName') ?? '');
+		const firstName = rawFirstName.trim();
+		const lastName = rawLastName.trim();
+		if (state.identityPolicy === 'name_required') {
+			const errors: { firstName?: string; lastName?: string } = {};
+			if (!firstName) errors.firstName = 'Enter your first name.';
+			if (!lastName) errors.lastName = 'Enter your last name.';
+			if (Object.keys(errors).length) return formError(400, 'Enter both your first and last name.', attemptToken, { fieldErrors: errors, firstName: rawFirstName, lastName: rawLastName });
+			if (firstName.length > 100 || lastName.length > 100) return formError(400, 'Names must be 100 characters or fewer.', attemptToken, {
+				fieldErrors: { ...(firstName.length > 100 ? { firstName: 'Use 100 characters or fewer.' } : {}), ...(lastName.length > 100 ? { lastName: 'Use 100 characters or fewer.' } : {}) },
+				firstName: rawFirstName, lastName: rawLastName
+			});
+		} else if (firstName || lastName) {
+			return formError(400, 'This queue does not collect names. Refresh the page and try again.', attemptToken);
+		}
 
 		let browserToken: string | undefined;
 		if (duplicatePreventionEnabled) {
@@ -122,7 +148,11 @@ export const actions: Actions = {
 			if (!browserToken || !isValidCredential(browserToken)) browserToken = generateCredential();
 		}
 		const browserDigest = browserToken ? await digestCredential(browserToken) : undefined;
-		const result = await joinAnonymousQueue(db, { publicId: params.publicId.toLowerCase(), attemptToken, browserDigest });
+		const result = await joinVisitorQueue(db, {
+			publicId: params.publicId.toLowerCase(), attemptToken, browserDigest,
+			firstName: state.identityPolicy === 'name_required' ? firstName : undefined,
+			lastName: state.identityPolicy === 'name_required' ? lastName : undefined
+		});
 		if (result === 'created_or_replayed') {
 			if (browserToken) cookies.set(browserCookie, browserToken, { path: '/', httpOnly: true, sameSite: 'lax', secure: url.protocol === 'https:', maxAge: 60 * 60 * 24 * 365 });
 			redirect(303, `/t/${attemptToken}`);
@@ -130,16 +160,16 @@ export const actions: Actions = {
 		if (result === 'browser_already_joined') {
 			if (browserToken) cookies.set(browserCookie, browserToken, { path: '/', httpOnly: true, sameSite: 'lax', secure: url.protocol === 'https:', maxAge: 60 * 60 * 24 * 365 });
 			const existing = browserDigest ? await findActiveBrowserTicket(db, params.publicId.toLowerCase(), browserDigest) : undefined;
-			if (!existing) return fail(409, { joinMessage: 'Your existing ticket could not be reopened. Use its saved tracking link.', attemptToken });
+			if (!existing) return formError(409, 'Your existing ticket could not be reopened. Use its saved tracking link.', attemptToken);
 			await findOrCreateTrackingCredential(db, existing.id, await digestCredential(attemptToken));
 			redirect(303, `/t/${attemptToken}`);
 		}
 		const messages = {
-			name_required: 'This queue requires first and last name. Please ask staff to assist.',
+			name_required: 'Enter both your first and last name.',
 			unavailable: 'This queue is no longer accepting visitors. Please check with staff.',
 			full: 'This queue has reached capacity. Please check with staff for your next step.',
 			failed: 'We could not complete your signup. Refresh the page and try again.'
 		};
-		return fail(result === 'failed' ? 500 : 409, { joinMessage: messages[result], attemptToken });
+		return formError(result === 'failed' ? 500 : 409, messages[result], attemptToken, { firstName: rawFirstName, lastName: rawLastName });
 	}
 };

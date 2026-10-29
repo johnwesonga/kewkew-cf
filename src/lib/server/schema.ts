@@ -100,6 +100,7 @@ export const tickets = sqliteTable('tickets', {
 	status: text('status', { enum: ['waiting', 'called', 'serving', 'completed', 'cancelled', 'no_show'] }).notNull(),
 	firstName: text('first_name'),
 	lastName: text('last_name'),
+	identityPolicy: text('identity_policy', { enum: ['anonymous', 'name_required'] }).notNull(),
 	joinedAt: text('joined_at').notNull(),
 	calledAt: text('called_at'),
 	startedAt: text('started_at'),
