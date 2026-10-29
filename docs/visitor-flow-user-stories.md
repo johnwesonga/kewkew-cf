@@ -70,6 +70,8 @@ flowchart LR
 - If the queue changes state after the page loads, the server rejects a now-invalid join and provides a useful explanation.
 - Closed-state copy may include configured reopening information when available; it must not invent an opening time.
 
+**Implementation note** — The public page now distinguishes inactive queue, location, and service states, a paused session, and the absence of an open session. It displays no join control when signup is unavailable. This story remains in progress because the visitor join route, ticket/capacity records, the enabled join action, and the server-side recheck during submission are part of the pending ticket flow (VF-4 and VF-5).
+
 ### VF-3: Select a service when a location offers more than one
 
 **Status** — Planned

@@ -1,7 +1,7 @@
 import { env as cloudflareEnv } from 'cloudflare:workers';
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, or } from 'drizzle-orm';
 import { createDatabase } from '#lib/server/database';
 import { locations, organizations, queueSessions, queues, services } from '#lib/server/schema';
 
@@ -33,7 +33,7 @@ export const load: PageServerLoad = async ({ params }) => {
 		.leftJoin(queueSessions, and(
 			eq(queueSessions.organizationId, queues.organizationId),
 			eq(queueSessions.queueId, queues.id),
-			eq(queueSessions.state, 'open')
+			or(eq(queueSessions.state, 'open'), eq(queueSessions.state, 'paused'))
 		))
 		.where(eq(queues.publicId, params.publicId.toLowerCase()))
 		.get();
@@ -43,6 +43,17 @@ export const load: PageServerLoad = async ({ params }) => {
 		&& queue.locationIsActive === 1
 		&& queue.serviceIsActive === 1
 		&& queue.sessionState === 'open';
+	const unavailableReason = signupAvailable
+		? null
+		: queue.queueIsActive !== 1
+			? 'queue_inactive'
+			: queue.locationIsActive !== 1
+				? 'location_inactive'
+				: queue.serviceIsActive !== 1
+					? 'service_inactive'
+					: queue.sessionState === 'paused'
+						? 'session_paused'
+						: 'session_not_open';
 
-	return { queue, signupAvailable };
+	return { queue, signupAvailable, unavailableReason };
 };

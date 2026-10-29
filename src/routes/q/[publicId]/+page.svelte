@@ -22,12 +22,25 @@
 		{#if data.signupAvailable}
 			<div class="public-queue-state available" role="status">
 				<span aria-hidden="true"></span>
-				<div><strong>Signup is open</strong><p>This queue is currently accepting visitors.</p></div>
+				<div><strong>Signup is open</strong><p>This queue is ready for visitors to join.</p></div>
 			</div>
 		{:else}
 			<div class="public-queue-state unavailable" role="status">
 				<span aria-hidden="true"></span>
-				<div><strong>Signup is unavailable</strong><p>This queue is not currently accepting visitors. Please check back later.</p></div>
+				<div>
+					<strong>Signup is unavailable</strong>
+					{#if data.unavailableReason === "queue_inactive"}
+						<p>This queue is currently unavailable. Please check back later.</p>
+					{:else if data.unavailableReason === "location_inactive"}
+						<p>This location is currently unavailable. Please check back later.</p>
+					{:else if data.unavailableReason === "service_inactive"}
+						<p>This service is currently unavailable. Please check back later.</p>
+					{:else if data.unavailableReason === "session_paused"}
+						<p>Signup is paused while staff manage the line. Please check back later.</p>
+					{:else}
+						<p>This queue does not have an open signup session right now.</p>
+					{/if}
+				</div>
 			</div>
 		{/if}
 		<p class="public-queue-note">This page is public queue information. It does not provide access to staff tools or private ticket tracking.</p>
