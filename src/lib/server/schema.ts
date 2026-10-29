@@ -61,13 +61,29 @@ export const queueSessions = sqliteTable('queue_sessions', {
 	state: text('state', { enum: ['open', 'paused', 'closed'] }).notNull(),
 	openedAt: text('opened_at').notNull(),
 	closedAt: text('closed_at'),
-	openRequestId: text('open_request_id')
+	openRequestId: text('open_request_id'),
+	transitionRequestId: text('transition_request_id')
 }, (table) => [
 	uniqueIndex('queue_sessions_one_current_per_queue')
 		.on(table.queueId)
 		.where(sql`${table.state} IN ('open', 'paused')`),
 	uniqueIndex('queue_sessions_open_request_once')
 		.on(table.queueId, table.openRequestId)
+]);
+
+export const queueSessionEvents = sqliteTable('queue_session_events', {
+	id: text('id').primaryKey(),
+	organizationId: text('organization_id').notNull(),
+	queueId: text('queue_id').notNull(),
+	sessionId: text('session_id').notNull(),
+	fromState: text('from_state', { enum: ['open', 'paused'] }).notNull(),
+	toState: text('to_state', { enum: ['open', 'paused'] }).notNull(),
+	actorUserId: text('actor_user_id').notNull(),
+	requestId: text('request_id').notNull(),
+	occurredAt: text('occurred_at').notNull()
+}, (table) => [
+	uniqueIndex('queue_session_events_request_once').on(table.requestId),
+	uniqueIndex('queue_session_events_by_session_time').on(table.sessionId, table.occurredAt, table.id)
 ]);
 
 export const membershipLocationAccess = sqliteTable('membership_location_access', {

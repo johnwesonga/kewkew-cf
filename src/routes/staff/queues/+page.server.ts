@@ -8,6 +8,7 @@ import {
 	membershipLocationAccess,
 	organizationMemberships,
 	organizations,
+	queueSessionEvents,
 	queueSessions,
 	queues,
 	services
@@ -80,6 +81,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			identityPolicy: queues.identityPolicy,
 			isActive: queues.isActive,
 			activeTicketCapacity: queues.activeTicketCapacity,
+			sessionId: queueSessions.id,
 			sessionState: queueSessions.state
 		})
 		.from(queues)
@@ -142,17 +144,130 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		organizations: memberships,
 		organization,
 		locationCount: locationCountRows[0]?.value ?? 0,
-		queues: rows.map((queue) => ({ ...queue, openRequestId: crypto.randomUUID() })),
+		queues: rows.map((queue) => ({
+			...queue,
+			openRequestId: crypto.randomUUID(),
+			transitionRequestId: queue.sessionId ? crypto.randomUUID() : null
+		})),
 		queueLocations,
 		queueServices,
 		createRequestId: organization.role === 'admin' ? crypto.randomUUID() : null,
 		created: url.searchParams.get('created') === '1',
 		updated: url.searchParams.get('updated') === '1',
-		opened: url.searchParams.get('opened') === '1'
+		opened: url.searchParams.get('opened') === '1',
+		sessionUpdated: url.searchParams.get('sessionUpdated'),
+		sessionUnchanged: url.searchParams.get('sessionUnchanged') === '1'
 	};
 };
 
 export const actions: Actions = {
+	changeSessionState: async ({ locals, request, url }) => {
+		if (!locals.user) redirect(303, '/staff/sign-in');
+		const form = await request.formData();
+		const organizationId = url.searchParams.get('organization') ?? '';
+		const queueId = String(form.get('queueId') ?? '');
+		const sessionId = String(form.get('sessionId') ?? '');
+		const requestId = String(form.get('requestId') ?? '');
+		const transition = String(form.get('transition') ?? '');
+		const invalid = (message: string, status = 400) => fail(status, { message });
+		if (!organizationId || !queueId || !sessionId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId) || (transition !== 'pause' && transition !== 'resume')) {
+			return invalid('This session form has expired. Reload the page and try again.');
+		}
+
+		const db = createDatabase((cloudflareEnv as Env).DB);
+		const userId = locals.user.id;
+		const adminAccess = exists(db.select({ userId: organizationMemberships.userId })
+			.from(organizationMemberships)
+			.where(and(
+				eq(organizationMemberships.organizationId, queueSessions.organizationId),
+				eq(organizationMemberships.userId, userId),
+				eq(organizationMemberships.role, 'admin'),
+				eq(organizationMemberships.status, 'active')
+			)));
+		const operatorAccess = exists(db.select({ userId: membershipLocationAccess.userId })
+			.from(membershipLocationAccess)
+			.innerJoin(organizationMemberships, and(
+				eq(organizationMemberships.organizationId, membershipLocationAccess.organizationId),
+				eq(organizationMemberships.userId, membershipLocationAccess.userId)
+			))
+			.innerJoin(queues, and(
+				eq(queues.organizationId, membershipLocationAccess.organizationId),
+				eq(queues.locationId, membershipLocationAccess.locationId),
+				eq(queues.id, queueSessions.queueId)
+			))
+			.where(and(
+				eq(membershipLocationAccess.organizationId, queueSessions.organizationId),
+				eq(membershipLocationAccess.userId, userId),
+				eq(organizationMemberships.role, 'operator'),
+				eq(organizationMemberships.status, 'active')
+			)));
+		const access = or(adminAccess, operatorAccess);
+		const session = await db.select({ state: queueSessions.state })
+			.from(queueSessions)
+			.innerJoin(queues, and(
+				eq(queues.organizationId, queueSessions.organizationId),
+				eq(queues.id, queueSessions.queueId)
+			))
+			.where(and(
+				eq(queueSessions.id, sessionId),
+				eq(queueSessions.queueId, queueId),
+				eq(queueSessions.organizationId, organizationId),
+				access
+			))
+			.get();
+		if (!session) error(404, 'Session not found');
+		if (session.state === 'closed') return invalid('Closed sessions cannot be paused or resumed.', 409);
+
+		const nextState = transition === 'pause' ? 'paused' : 'open';
+		if (session.state === nextState) {
+			redirect(303, `/staff/queues?organization=${encodeURIComponent(organizationId)}&sessionUnchanged=1`);
+		}
+
+		const priorRequest = await db.select({ id: queueSessionEvents.id })
+			.from(queueSessionEvents)
+			.where(eq(queueSessionEvents.requestId, requestId))
+			.get();
+		if (priorRequest) redirect(303, `/staff/queues?organization=${encodeURIComponent(organizationId)}&sessionUnchanged=1`);
+
+		const now = new Date().toISOString();
+		const update = db.update(queueSessions)
+			.set({ state: nextState, transitionRequestId: requestId })
+			.where(and(
+				eq(queueSessions.id, sessionId),
+				eq(queueSessions.queueId, queueId),
+				eq(queueSessions.organizationId, organizationId),
+				eq(queueSessions.state, session.state),
+				not(exists(db.select({ id: queueSessionEvents.id }).from(queueSessionEvents).where(eq(queueSessionEvents.requestId, requestId)))),
+				access
+			));
+		const event = db.insert(queueSessionEvents).select(db.select({
+			id: sql<string>`${crypto.randomUUID()}`.as('id'),
+			organizationId: queueSessions.organizationId,
+			queueId: queueSessions.queueId,
+			sessionId: queueSessions.id,
+			fromState: sql<'open' | 'paused'>`${session.state}`.as('from_state'),
+			toState: queueSessions.state,
+			actorUserId: sql<string>`${userId}`.as('actor_user_id'),
+			requestId: sql<string>`${requestId}`.as('request_id'),
+			occurredAt: sql<string>`${now}`.as('occurred_at')
+		}).from(queueSessions).where(and(
+			eq(queueSessions.id, sessionId),
+			eq(queueSessions.organizationId, organizationId),
+			eq(queueSessions.state, nextState),
+			eq(queueSessions.transitionRequestId, requestId)
+		))).onConflictDoNothing();
+		const result = await db.batch([update, event]);
+		if (result[0]?.meta.changes !== 1) {
+			const current = await db.select({ state: queueSessions.state }).from(queueSessions).where(and(
+				eq(queueSessions.id, sessionId),
+				eq(queueSessions.organizationId, organizationId)
+			)).get();
+			if (current?.state === nextState) redirect(303, `/staff/queues?organization=${encodeURIComponent(organizationId)}&sessionUnchanged=1`);
+			return invalid('The session changed before this request completed. Refresh the page and try again.', 409);
+		}
+
+		redirect(303, `/staff/queues?organization=${encodeURIComponent(organizationId)}&sessionUpdated=${nextState}`);
+	},
 	openSession: async ({ locals, request, url }) => {
 		if (!locals.user) redirect(303, '/staff/sign-in');
 		const form = await request.formData();

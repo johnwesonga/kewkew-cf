@@ -168,6 +168,9 @@
 						Queue configuration updated.
 					</p>{/if}
 				{#if data.opened}<p class="staff-feedback success-message" role="status">Session opened. Ticket numbering starts at 1 for this session.</p>{/if}
+				{#if data.sessionUpdated === "paused"}<p class="staff-feedback success-message" role="status">Session paused. Visitors can no longer join this session.</p>{/if}
+				{#if data.sessionUpdated === "open"}<p class="staff-feedback success-message" role="status">Session resumed. Visitors can join again.</p>{/if}
+				{#if data.sessionUnchanged}<p class="staff-feedback success-message" role="status">The session was already in that state; no duplicate transition was recorded.</p>{/if}
 				{#if form?.message}<p
 						class="staff-feedback error-message"
 						role="alert"
@@ -402,6 +405,15 @@
 												>
 											<td>
 												<div class="queue-row-actions">
+													{#if queue.sessionId && queue.transitionRequestId && (queue.sessionState === "open" || queue.sessionState === "paused")}
+														<form method="POST" action={`?/changeSessionState&organization=${encodeURIComponent(data.organization.organizationId)}`}>
+															<input type="hidden" name="queueId" value={queue.id} />
+															<input type="hidden" name="sessionId" value={queue.sessionId} />
+															<input type="hidden" name="requestId" value={queue.transitionRequestId} />
+															<input type="hidden" name="transition" value={queue.sessionState === "open" ? "pause" : "resume"} />
+															<button class="queue-edit-link" type="submit">{queue.sessionState === "open" ? "Pause" : "Resume"}</button>
+														</form>
+													{/if}
 													{#if queue.sessionState === null && queue.isActive === 1 && queue.locationIsActive === 1 && queue.serviceIsActive === 1}
 														<form method="POST" action={`?/openSession&organization=${encodeURIComponent(data.organization.organizationId)}`}>
 															<input type="hidden" name="queueId" value={queue.id} />

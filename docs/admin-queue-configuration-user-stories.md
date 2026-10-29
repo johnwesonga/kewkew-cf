@@ -122,7 +122,7 @@ Each story is marked **Planned** until implemented. The AQ identifiers follow th
 
 ## AQ-7: Pause and resume a session
 
-**Status** — Planned
+**Status** — In progress
 
 **User story** — As an authorized operator or administrator, I want to pause and resume a session so I can temporarily stop visitor signups while continuing to manage the current line.
 
@@ -133,6 +133,8 @@ Each story is marked **Planned** until implemented. The AQ identifiers follow th
 - Pausing and resuming preserve ticket numbers, ordering, ticket states, and session history.
 - Repeated requests that would leave the state unchanged are handled safely and do not create duplicate transition history.
 - A closed session cannot be paused or resumed.
+
+**Implementation note** — Administrators and operators assigned to the queue's location can pause and resume sessions from the queue list. Each actual state change and actor is recorded atomically; duplicate or stale requests do not create transition events. The public queue page only treats `open` sessions as available. Ticket records and staff ticket operations are not implemented yet, so this lifecycle change leaves existing ticket data untouched and later ticket actions must remain available while a session is paused.
 
 ## AQ-8: Close a session
 
