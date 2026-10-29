@@ -127,17 +127,14 @@ export const actions: Actions = {
 			.where(and(eq(organizationMemberships.organizationId, organizationId), sql`lower(${users.email}) = ${email}`))
 			.limit(1);
 		if (existingMember) return fail(409, { message: 'This person is already a member of the organization.' });
-		if (!env.RESEND_API_KEY || !env.INVITATION_FROM_EMAIL || !env.PUBLIC_APP_URL) return fail(503, { message: 'Invitation email is not configured. Set RESEND_API_KEY, INVITATION_FROM_EMAIL, and PUBLIC_APP_URL.' });
-		let appUrl: URL;
-		try { appUrl = new URL(env.PUBLIC_APP_URL); }
-		catch { return fail(503, { message: 'PUBLIC_APP_URL must be a valid absolute URL.' }); }
-		if (appUrl.protocol !== 'https:' && appUrl.hostname !== 'localhost') return fail(503, { message: 'PUBLIC_APP_URL must use HTTPS.' });
+		if (!env.RESEND_API_KEY || !env.INVITATION_FROM_EMAIL) return fail(503, { message: 'Invitation email is not configured. Set RESEND_API_KEY and INVITATION_FROM_EMAIL.' });
+		if (url.protocol !== 'https:' && url.hostname !== 'localhost') return fail(503, { message: 'Invitation links require HTTPS outside local development.' });
 		const token = [...crypto.getRandomValues(new Uint8Array(32))].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 		const id = crypto.randomUUID();
 		const now = new Date();
 		const createdAt = now.toISOString();
 		const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
-		const inviteUrl = new URL(`/staff/invitation/${token}`, appUrl.origin).toString();
+		const inviteUrl = new URL(`/staff/invitation/${token}`, url.origin).toString();
 		const [organizationRow] = await db.select({ name: organizations.name }).from(organizations).where(eq(organizations.id, organizationId)).limit(1);
 		const priorInvites = db.update(staffInvitations).set({ revokedAt: createdAt }).where(and(
 			eq(staffInvitations.organizationId, organizationId),

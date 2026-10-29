@@ -9,7 +9,6 @@ declare global {
 		KEWKEW_BOOTSTRAP_SECRET: string;
 		RESEND_API_KEY?: string;
 		INVITATION_FROM_EMAIL?: string;
-		PUBLIC_APP_URL?: string;
 	}
 
 	namespace App {

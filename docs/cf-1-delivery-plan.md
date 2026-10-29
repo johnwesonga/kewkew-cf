@@ -111,17 +111,19 @@ suspension state.
   enabling delivery.
 
 **Implementation decision** — Invitation email uses Resend's HTTP email API
-through a small server-side sender module. `RESEND_API_KEY`,
-`INVITATION_FROM_EMAIL`, and the canonical `PUBLIC_APP_URL` are configured per
-environment; the sender domain must be verified with Resend before use. The API
-key stays server-side, and sends use an idempotency key based on the invitation
-ID. Invitations expire after seven days, are single-use, and persist only a
-SHA-256 digest of a 256-bit random token. If delivery fails, the invite is
-retained with a failed delivery state; an administrator revokes it and issues a
-fresh invitation after fixing delivery. There is no resend of the same token
-and no account password recovery flow in this increment; existing account
-recovery remains out of scope until its provider and verification policy are
-separately decided.
+through a small server-side sender module. `RESEND_API_KEY` and
+`INVITATION_FROM_EMAIL` are configured per environment; invitation links use
+the origin of the authenticated staff request, so local, preview, and
+production sends target the host currently serving the app. Use the intended
+deployment hostname when issuing invitations. The sender domain must be
+verified with Resend before use. The API key stays server-side, and sends use
+an idempotency key based on the invitation ID. Invitations expire after seven
+days, are single-use, and persist only a SHA-256 digest of a 256-bit random
+token. If delivery fails, the invite is retained with a failed delivery state;
+an administrator revokes it and issues a fresh invitation after fixing
+delivery. There is no resend of the same token and no account password recovery
+flow in this increment; existing account recovery remains out of scope until
+its provider and verification policy are separately decided.
 
 **Implemented behavior** — `/staff/access` is admin-only and supports sending
 invitations, replacing member roles and operator locations, suspending or

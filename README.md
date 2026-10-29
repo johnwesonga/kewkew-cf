@@ -37,11 +37,12 @@ The first trusted administrator setup is available at `/setup`. It requires
 is disabled. After setup, staff sign in at `/staff/sign-in`.
 
 Staff invitations use the [Resend email API](https://resend.com/docs/api-reference/emails/send-email).
-Set `RESEND_API_KEY` as a Worker secret, and set `INVITATION_FROM_EMAIL` and
-`PUBLIC_APP_URL` as variables for each deployed environment. Verify the sender
-domain in Resend before using it; localhost is allowed for the local app URL,
-while preview and production URLs must use HTTPS. Failed sends remain visible
-to administrators; revoke the failed invitation and issue a new one after
+Set `RESEND_API_KEY` as a Worker secret and `INVITATION_FROM_EMAIL` for each
+deployed environment. Invitation links use the origin of the staff request, so
+local, preview, and production emails point back to the host where the admin is
+using the app. Use the intended deployment hostname when issuing invitations.
+Verify the sender domain in Resend before use. Failed sends remain visible to
+administrators; revoke the failed invitation and issue a new one after
 restoring delivery.
 
 ## Build and checks

@@ -90,7 +90,7 @@ export const actions: Actions = {
 			eq(organizationMemberships.role, 'admin'),
 			eq(organizationMemberships.status, 'active')
 		));
-		const accepted = db.update(staffInvitations).set({ acceptedByUserId: userId, acceptedAt: now }).where(and(
+		const canAcceptInvitation = () => and(
 			eq(staffInvitations.id, invitation.id),
 			eq(staffInvitations.tokenDigest, tokenDigest),
 			eq(staffInvitations.invitedEmail, invitation.invitedEmail),
@@ -99,15 +99,12 @@ export const actions: Actions = {
 			isNull(staffInvitations.revokedAt),
 			gt(staffInvitations.expiresAt, now),
 			or(not(exists(existingActiveAdmin)), eq(staffInvitations.role, 'admin'), sql`(${activeAdmins}) > 1`)
-		));
-		const operations: BatchItem<'sqlite'>[] = [accepted];
-		const acceptanceMarker = and(
-			eq(staffInvitations.id, invitation.id),
-			eq(staffInvitations.acceptedByUserId, userId),
-			eq(staffInvitations.acceptedAt, now)
 		);
+		const operations: BatchItem<'sqlite'>[] = [];
 		if (createIdentity) {
-			const passwordHash = await hashPassword(password);
+			// accepted_by_user_id references users, so create the invitee first. The
+			// same pending-invitation predicate guards this insert and the acceptance
+			// update below; the D1 batch rolls both back if any later write fails.
 			operations.push(db.insert(users).select(db.select({
 				id: sql<string>`${userId}`.as('id'),
 				name: sql<string>`${name}`.as('name'),
@@ -116,7 +113,17 @@ export const actions: Actions = {
 				image: sql<null>`NULL`.as('image'),
 				createdAt: sql<string>`${now}`.as('created_at'),
 				updatedAt: sql<string>`${now}`.as('updated_at')
-			}).from(staffInvitations).where(acceptanceMarker)));
+			}).from(staffInvitations).where(canAcceptInvitation())));
+		}
+		const acceptedIndex = operations.length;
+		operations.push(db.update(staffInvitations).set({ acceptedByUserId: userId, acceptedAt: now }).where(canAcceptInvitation()));
+		const acceptanceMarker = and(
+			eq(staffInvitations.id, invitation.id),
+			eq(staffInvitations.acceptedByUserId, userId),
+			eq(staffInvitations.acceptedAt, now)
+		);
+		if (createIdentity) {
+			const passwordHash = await hashPassword(password);
 			operations.push(db.insert(accounts).select(db.select({
 				id: sql<string>`${crypto.randomUUID()}`.as('id'),
 				accountId: sql<string>`${userId}`.as('account_id'),
@@ -176,8 +183,9 @@ export const actions: Actions = {
 		}).from(staffInvitations).where(acceptanceMarker)));
 		try {
 			const result = await db.batch(operations as unknown as Parameters<typeof db.batch>[0]);
-			if (result[0]?.meta.changes !== 1) return fail(409, { message: 'This invitation has already been used or is no longer valid.' });
-		} catch {
+			if (result[acceptedIndex]?.meta.changes !== 1) return fail(409, { message: 'This invitation has already been used or is no longer valid.' });
+		} catch (cause) {
+			console.error('Staff invitation acceptance batch failed', cause instanceof Error ? cause.message : 'Unknown database error');
 			return fail(400, { message: 'The invitation could not be accepted. No access was changed; contact an administrator.' });
 		}
 		redirect(303, '/staff/sign-in?invitation=accepted');

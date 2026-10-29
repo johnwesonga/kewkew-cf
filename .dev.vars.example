@@ -2,5 +2,4 @@ BETTER_AUTH_SECRET=replace-with-a-unique-random-value
 KEWKEW_BOOTSTRAP_SECRET=replace-with-a-different-unique-random-value
 RESEND_API_KEY=re_replace_with_your_resend_api_key
 INVITATION_FROM_EMAIL=Kewkew <noreply@example.com>
-PUBLIC_APP_URL=http://localhost:8787
 BROWSER_DUPLICATE_SIGNUP_PREVENTION=false
