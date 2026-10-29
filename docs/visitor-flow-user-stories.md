@@ -44,7 +44,7 @@ flowchart LR
 
 ### VF-1: Open a queue from a shared link or QR code
 
-**Status** — In progress
+**Status** — Complete
 
 **User story** — As a visitor, I want to open a queue from a link or scanned QR code so I can see where to join without installing an app.
 
@@ -55,7 +55,7 @@ flowchart LR
 - The page identifies the location and service in text, not only through a logo, color, or QR code.
 - The page remains usable at narrow mobile widths and with keyboard navigation.
 
-**Current implementation** — `/q/[publicId]` resolves an opaque queue link and displays organization, location, service, and an availability state. Unavailable reasons and fuller accessibility review remain.
+**Implementation note** — `/q/[publicId]` resolves an opaque queue link and displays the organization, location, service, and availability. Malformed and unknown identifiers redirect to a generic unavailable page that reveals no queue data. The public page uses responsive sizing and visible keyboard focus for its links.
 
 ### VF-2: Understand whether a queue is open
 

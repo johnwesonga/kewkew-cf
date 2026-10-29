@@ -1,12 +1,12 @@
 import { env as cloudflareEnv } from 'cloudflare:workers';
-import { error } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { and, eq } from 'drizzle-orm';
 import { createDatabase } from '#lib/server/database';
 import { locations, organizations, queueSessions, queues, services } from '#lib/server/schema';
 
 export const load: PageServerLoad = async ({ params }) => {
-	if (!/^[0-9a-f]{32}$/i.test(params.publicId)) error(404, 'Queue not found');
+	if (!/^[0-9a-f]{32}$/i.test(params.publicId)) redirect(303, '/q/unavailable');
 
 	const db = createDatabase((cloudflareEnv as Env).DB);
 	const queue = await db.select({
@@ -33,12 +33,12 @@ export const load: PageServerLoad = async ({ params }) => {
 		.leftJoin(queueSessions, and(
 			eq(queueSessions.organizationId, queues.organizationId),
 			eq(queueSessions.queueId, queues.id),
-		eq(queueSessions.state, 'open')
+			eq(queueSessions.state, 'open')
 		))
 		.where(eq(queues.publicId, params.publicId.toLowerCase()))
 		.get();
 
-	if (!queue) error(404, 'Queue not found');
+	if (!queue) redirect(303, '/q/unavailable');
 	const signupAvailable = queue.queueIsActive === 1
 		&& queue.locationIsActive === 1
 		&& queue.serviceIsActive === 1
