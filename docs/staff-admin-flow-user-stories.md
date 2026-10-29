@@ -22,13 +22,13 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 **Status tracking** — `Complete` means the story's acceptance criteria are implemented; `In progress` means some criteria remain; `Planned` means implementation has not started. Status tracks implementation in this repository, not production release.
 
-**Current implementation note** — All SF stories are currently marked Planned. Staff sign-in, membership management, administrator setup, and queue/session configuration foundations exist, but the staff ticket board and staff ticket transition flows described here are not implemented. Unit tests for `staff-ticket-rules.ts` cover domain-policy helpers only; they do not establish that these user stories are implemented.
+**Current implementation note** — SF-1 is Complete. SF-2 through SF-10 remain Planned; the staff ticket board and staff ticket transition flows are not implemented. Unit tests for `staff-ticket-rules.ts` cover domain-policy helpers only and do not establish that those stories are implemented.
 
 ### SF-1: Access assigned queues
 
-**Status** — Planned
+**Status** — Complete
 
-**Implementation note** — Staff sign-in and membership administration provide part of this foundation. The full story remains planned until the assigned-queue operational view and all stated organization/location authorization criteria are complete and reviewed together.
+**Implementation note** — Staff sign-in uses Better Auth with public sign-up disabled; accounts are created through administrator-controlled invitations. Sign-in lands on `/staff/queues`. The server requires active organization membership and filters operator queues to assigned locations; the response is filtered again by organization, role, membership status, and assigned locations. A signed-in user without active membership is directed to the no-access view. Administrator-only staff management rechecks active admin access for each change, restricts operator location assignments to the organization, and protects the last active administrator from suspension or demotion.
 
 **User story** — As a staff member, I want to sign in and see only the queues I am assigned to so that visitor information and queue controls are limited to my work.
 

@@ -3,6 +3,7 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { and, asc, count, eq, exists, not, or, sql } from 'drizzle-orm';
 import { createDatabase } from '#lib/server/database';
+import { filterStaffQueues } from '#lib/server/staff-access';
 import { canOpenQueueSession, resolveSessionTransition, validateQueueConfiguration } from '#lib/server/queue-rules';
 import {
 	locations,
@@ -34,7 +35,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		))
 		.orderBy(asc(sql`lower(${organizations.name})`), asc(organizations.id));
 
-	if (memberships.length === 0) error(404, 'Workspace not found');
+	if (memberships.length === 0) redirect(303, '/staff');
 
 	const requestedOrganizationId = url.searchParams.get('organization');
 	const organization = requestedOrganizationId
@@ -71,6 +72,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	const rows = await db
 		.select({
 			id: queues.id,
+			organizationId: queues.organizationId,
 			publicId: queues.publicId,
 			name: queues.name,
 			locationId: locations.id,
@@ -126,6 +128,26 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 					)))
 		))
 		.orderBy(asc(sql`lower(${locations.name})`), asc(sql`lower(${queues.name})`), asc(queues.id));
+	const assignedLocationRows = organization.role === 'operator'
+		? await db.select({ locationId: membershipLocationAccess.locationId })
+			.from(membershipLocationAccess)
+			.innerJoin(organizationMemberships, and(
+				eq(organizationMemberships.organizationId, membershipLocationAccess.organizationId),
+				eq(organizationMemberships.userId, membershipLocationAccess.userId)
+			))
+			.where(and(
+				eq(membershipLocationAccess.organizationId, organization.organizationId),
+				eq(membershipLocationAccess.userId, userId),
+				eq(organizationMemberships.role, 'operator'),
+				eq(organizationMemberships.status, 'active')
+			))
+		: [];
+	const visibleQueues = filterStaffQueues(rows, {
+		organizationId: organization.organizationId,
+		role: organization.role,
+		status: 'active',
+		locationIds: assignedLocationRows.map((row) => row.locationId)
+	});
 
 	const queueLocations = organization.role === 'admin'
 		? await db.select({ id: locations.id, name: locations.name, isActive: locations.isActive })
@@ -145,7 +167,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		organizations: memberships,
 		organization,
 		locationCount: locationCountRows[0]?.value ?? 0,
-		queues: rows.map((queue) => ({
+		queues: visibleQueues.map((queue) => ({
 			...queue,
 			openRequestId: crypto.randomUUID(),
 			transitionRequestId: queue.sessionId ? crypto.randomUUID() : null
