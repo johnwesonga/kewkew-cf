@@ -1500,6 +1500,79 @@ select {
 	font-weight: 750;
 }
 
+.public-service-choices {
+	margin-top: 22px;
+	padding-top: 18px;
+	border-top: 1px solid var(--line);
+}
+
+.public-service-choices > summary {
+	color: var(--green-dark);
+	font-size: 13px;
+	font-weight: 750;
+	cursor: pointer;
+}
+
+.public-service-choices > summary:focus-visible,
+.public-service-choices li a:focus-visible {
+	outline: 3px solid var(--green);
+	outline-offset: 3px;
+}
+
+.public-service-choices > p {
+	margin: 10px 0;
+	color: var(--muted);
+	font-size: 12px;
+	line-height: 1.5;
+}
+
+.public-service-choices ul {
+	display: grid;
+	gap: 8px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.public-service-choices li {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	min-width: 0;
+	padding: 12px;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+}
+
+.public-service-choices li > div {
+	display: grid;
+	gap: 3px;
+	min-width: 0;
+}
+
+.public-service-choices li strong {
+	color: var(--ink);
+	font-size: 13px;
+}
+
+.public-service-choices li span,
+.public-service-choices li a {
+	font-size: 12px;
+}
+
+.public-service-choices li > div span,
+.public-choice-unavailable {
+	color: var(--muted);
+}
+
+.public-service-choices li a,
+.public-choice-current {
+	flex: 0 0 auto;
+	color: var(--green-dark);
+	font-weight: 700;
+}
+
 .queue-back-link,
 .queue-cancel-link {
 	color: var(--green-dark);

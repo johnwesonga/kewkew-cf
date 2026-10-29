@@ -43,6 +43,29 @@
 				</div>
 			</div>
 		{/if}
+		{#if data.serviceChoices.length > 1}
+			<details class="public-service-choices">
+				<summary>Choose a service at this location</summary>
+				<p>Only queues that are open for signup can be selected.</p>
+				<ul>
+					{#each data.serviceChoices as choice (choice.publicId)}
+						<li>
+							<div>
+								<strong>{choice.serviceName}</strong>
+								<span>{choice.queueName}</span>
+							</div>
+							{#if choice.publicId === data.queue.publicId && choice.signupAvailable}
+								<span class="public-choice-current">Current queue</span>
+							{:else if choice.signupAvailable}
+								<a href={`/q/${encodeURIComponent(choice.publicId)}`}>View queue</a>
+							{:else}
+								<span class="public-choice-unavailable">Unavailable</span>
+							{/if}
+						</li>
+					{/each}
+				</ul>
+			</details>
+		{/if}
 		<p class="public-queue-note">This page is public queue information. It does not provide access to staff tools or private ticket tracking.</p>
 	</section>
 </main>

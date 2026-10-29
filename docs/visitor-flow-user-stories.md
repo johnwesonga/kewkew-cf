@@ -74,7 +74,7 @@ flowchart LR
 
 ### VF-3: Select a service when a location offers more than one
 
-**Status** — Planned
+**Status** — Complete
 
 **User story** — As a visitor, I want to choose the service I need so I join the correct queue.
 
@@ -84,6 +84,8 @@ flowchart LR
 - I can select exactly one service before joining.
 - A link to one specific queue may skip service selection and show that queue directly.
 - A service that is closed or unavailable cannot be selected.
+
+**Implementation note** — A direct queue link opens that queue immediately. When its location has other configured queues, the visitor can expand a service chooser showing each service and queue; only queues with an active queue, location, service, and open session have a selectable link. Unavailable options remain visible without a navigation link. Position and wait estimates are omitted until tickets are implemented.
 
 ### VF-4: Join an anonymous queue
 
