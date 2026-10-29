@@ -3,7 +3,8 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { eq } from 'drizzle-orm';
 import { createDatabase } from '#lib/server/database';
-import { cancelTrackedTicket, digestCredential, getTicketByTrackingCredential, isValidCredential } from '#lib/server/visitor-join';
+import { cancelTrackedTicket, getTicketByTrackingCredential } from '#lib/server/visitor-join';
+import { digestCredential, isValidCredential } from '#lib/server/visitor-credential';
 import { organizations, tickets } from '#lib/server/schema';
 
 export const load: PageServerLoad = async ({ params, setHeaders }) => {

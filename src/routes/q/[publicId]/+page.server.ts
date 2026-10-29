@@ -3,7 +3,9 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { and, eq, or, sql } from 'drizzle-orm';
 import { createDatabase } from '#lib/server/database';
-import { generateCredential, getJoinState, joinVisitorQueue, isValidCredential, digestCredential, findActiveBrowserTicket, findOrCreateTrackingCredential } from '#lib/server/visitor-join';
+import { getJoinState, joinVisitorQueue, findActiveBrowserTicket, findOrCreateTrackingCredential } from '#lib/server/visitor-join';
+import { digestCredential, generateCredential, isValidCredential } from '#lib/server/visitor-credential';
+import { validateVisitorIdentity } from '#lib/server/visitor-validation';
 import { locations, organizations, queueSessions, queues, services, tickets } from '#lib/server/schema';
 
 const duplicatePreventionEnabled = !(import.meta.env.DEV && (process.env.BROWSER_DUPLICATE_SIGNUP_PREVENTION ?? 'true') === 'false');
@@ -131,20 +133,12 @@ export const actions: Actions = {
 		if (!state) return formError(404, 'This queue is no longer available.', attemptToken);
 		const rawFirstName = String(formData.get('firstName') ?? '');
 		const rawLastName = String(formData.get('lastName') ?? '');
-		const firstName = rawFirstName.trim();
-		const lastName = rawLastName.trim();
-		if (state.identityPolicy === 'name_required') {
-			const errors: { firstName?: string; lastName?: string } = {};
-			if (!firstName) errors.firstName = 'Enter your first name.';
-			if (!lastName) errors.lastName = 'Enter your last name.';
-			if (Object.keys(errors).length) return formError(400, 'Enter both your first and last name.', attemptToken, { fieldErrors: errors, firstName: rawFirstName, lastName: rawLastName });
-			if (firstName.length > 100 || lastName.length > 100) return formError(400, 'Names must be 100 characters or fewer.', attemptToken, {
-				fieldErrors: { ...(firstName.length > 100 ? { firstName: 'Use 100 characters or fewer.' } : {}), ...(lastName.length > 100 ? { lastName: 'Use 100 characters or fewer.' } : {}) },
-				firstName: rawFirstName, lastName: rawLastName
-			});
-		} else if (firstName || lastName) {
-			return formError(400, 'This queue does not collect names. Refresh the page and try again.', attemptToken);
-		}
+		const identity = validateVisitorIdentity(state.identityPolicy, rawFirstName, rawLastName);
+		if (!identity.valid) return formError(400, identity.message, attemptToken, {
+			fieldErrors: identity.fieldErrors,
+			firstName: rawFirstName,
+			lastName: rawLastName
+		});
 
 		let browserToken: string | undefined;
 		if (duplicatePreventionEnabled) {
@@ -154,8 +148,8 @@ export const actions: Actions = {
 		const browserDigest = browserToken ? await digestCredential(browserToken) : undefined;
 		const result = await joinVisitorQueue(db, {
 			publicId: params.publicId.toLowerCase(), attemptToken, browserDigest,
-			firstName: state.identityPolicy === 'name_required' ? firstName : undefined,
-			lastName: state.identityPolicy === 'name_required' ? lastName : undefined
+			firstName: identity.firstName ?? undefined,
+			lastName: identity.lastName ?? undefined
 		});
 		if (result === 'created_or_replayed') {
 			if (browserToken) cookies.set(browserCookie, browserToken, { path: '/', httpOnly: true, sameSite: 'lax', secure: url.protocol === 'https:', maxAge: 60 * 60 * 24 * 365 });
