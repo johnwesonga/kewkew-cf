@@ -10,11 +10,15 @@
 	let selectedLocationId = $state("");
 	let selectedServiceId = $state("");
 	$effect(() => {
-		selectedLocationId =
+		const locationId =
 			form?.locationId ?? data.queueLocations[0]?.id ?? "";
-		selectedServiceId = form?.serviceId ?? "";
+		const serviceId = form?.serviceId ?? "";
+		const service = data.queueServices.find((entry) => entry.id === serviceId);
+		selectedLocationId = locationId;
+		selectedServiceId = service && service.locationId !== locationId ? "" : serviceId;
 	});
-	$effect(() => {
+	function handleLocationChange(event: Event) {
+		selectedLocationId = (event.currentTarget as HTMLSelectElement).value;
 		const selectedService = data.queueServices.find(
 			(service) => service.id === selectedServiceId,
 		);
@@ -23,7 +27,7 @@
 			selectedService.locationId !== selectedLocationId
 		)
 			selectedServiceId = "";
-	});
+	}
 	let filteredQueues = $derived(
 		data.queues.filter(
 			(queue) =>
@@ -221,6 +225,7 @@
 										<select
 											name="locationId"
 											bind:value={selectedLocationId}
+							onchange={handleLocationChange}
 											required
 										>
 											<option value="" disabled
