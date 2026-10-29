@@ -22,11 +22,13 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 **Status tracking** — `Complete` means the story's acceptance criteria are implemented; `In progress` means some criteria remain; `Planned` means implementation has not started. Status tracks implementation in this repository, not production release.
 
+**Current implementation note** — All SF stories are currently marked Planned. Staff sign-in, membership management, administrator setup, and queue/session configuration foundations exist, but the staff ticket board and staff ticket transition flows described here are not implemented. Unit tests for `staff-ticket-rules.ts` cover domain-policy helpers only; they do not establish that these user stories are implemented.
+
 ### SF-1: Access assigned queues
 
-**Status** — Complete
+**Status** — Planned
 
-**Status note** — Staff routes require an authenticated identity with an active membership. Queue reads and actions recheck organization and location access; administrators manage staff roles, assignments, and membership status. Last-active-admin protections cover suspension and role demotion.
+**Implementation note** — Staff sign-in and membership administration provide part of this foundation. The full story remains planned until the assigned-queue operational view and all stated organization/location authorization criteria are complete and reviewed together.
 
 **User story** — As a staff member, I want to sign in and see only the queues I am assigned to so that visitor information and queue controls are limited to my work.
 
@@ -44,7 +46,7 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 ### SF-2: Monitor a queue
 
-**Status** — Complete
+**Status** — Planned
 
 **User story** — As a queue operator, I want to see waiting visitors and their current states so that I can serve the queue in order.
 
@@ -60,7 +62,7 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 ### SF-3: Call the next visitor
 
-**Status** — Complete
+**Status** — Planned
 
 **User story** — As a queue operator, I want to call the next waiting visitor so that service follows queue order.
 
@@ -76,7 +78,7 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 ### SF-4: Start serving a called visitor
 
-**Status** — Complete
+**Status** — Planned
 
 **User story** — As a queue operator, I want to mark a called visitor as being served so the visitor and other staff know service has started.
 
@@ -91,7 +93,7 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 ### SF-5: Complete service
 
-**Status** — Complete
+**Status** — Planned
 
 **User story** — As a queue operator, I want to complete a visitor's service so their ticket leaves the active queue and the next visitor's position is accurate.
 
@@ -106,7 +108,7 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 ### SF-6: Skip a visitor who does not respond
 
-**Status** — Complete
+**Status** — Planned
 
 **User story** — As a queue operator, I want to mark a called visitor as a no-show so the queue can continue when they do not respond.
 
@@ -122,7 +124,7 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 ### SF-7: Cancel a ticket as staff
 
-**Status** — Complete
+**Status** — Planned
 
 **User story** — As a queue operator, I want to cancel a ticket when a visitor or business circumstance requires it so the queue no longer holds that place.
 
@@ -138,7 +140,7 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 ### SF-8: See committed changes across connected screens
 
-**Status** — Complete
+**Status** — Planned
 
 **User story** — As staff or a visitor with a connected ticket page, I want queue changes to appear promptly so everyone acts on the same state.
 
@@ -154,7 +156,7 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 ### SF-9: Requeue a returning no-show visitor
 
-**Status** — Complete
+**Status** — Planned
 
 **User story** — As a queue operator, I want to requeue a visitor who returns after being marked as a no-show so they can receive service without jumping ahead of visitors already waiting.
 
@@ -172,9 +174,9 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 ### SF-10: Navigate between queue operations and workspace setup
 
-**Status** — Complete
+**Status** — Planned
 
-**Status note** — `/staff` is the focused Live queues view. The administrator-only Setup area has a summary landing page with separate Locations, organization-wide Services grouped by location, Queues, and Staff access views. Setup links are hidden for operators, and the server rejects direct setup access without an active admin membership.
+**Implementation note** — Administrator setup navigation and configuration views exist. The focused staff ticket-operation view and links from it to operational queue boards are not implemented, so the full story remains planned.
 
 **User story** — As a staff member, I want queue operations and workspace setup in separate views so I can quickly find the actions relevant to my role.
 
