@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	canCallNext,
 	canCompleteService,
+	canSkipTicket,
 	canStartServing,
 	isActiveStaffTicket,
 	recallQueueSequence,
@@ -94,6 +95,17 @@ describe('canCompleteService', () => {
 	it.each(['waiting', 'called', 'completed', 'cancelled', 'no_show'] as const)(
 		'disables completion for %s tickets',
 		(status) => expect(canCompleteService(status)).toBe(false)
+	);
+});
+
+describe('canSkipTicket', () => {
+	it('allows skipping only called tickets', () => {
+		expect(canSkipTicket('called')).toBe(true);
+	});
+
+	it.each(['waiting', 'serving', 'completed', 'cancelled', 'no_show'] as const)(
+		'disables skipping for %s tickets',
+		(status) => expect(canSkipTicket(status)).toBe(false)
 	);
 });
 

@@ -179,6 +179,14 @@
 							? "Completion request already processed for ticket"
 							: "Service completed for ticket"} #{data.completedTicket}. The ticket has left the active queue.
 					</p>{/if}
+				{#if data.skippedTicket}<p
+						class="staff-feedback success-message"
+						role="status"
+					>
+						{data.replayedSkip
+							? "Skip request already processed for ticket"
+							: "Ticket marked as no-show"} #{data.skippedTicket}. The ticket has left the active queue.
+					</p>{/if}
 				{#if data.sessionId && !data.canCallNext}<p
 						class="queue-board-action-hint"
 					>
@@ -262,6 +270,17 @@
 											>
 										</form>
 									{/if}
+								{#if ticket.canSkip && ticket.skipRequestId && data.sessionId}
+									<form
+									method="POST"
+									action={`?/skipTicket&organization=${encodeURIComponent(data.organization.organizationId)}`}
+								>
+									<input type="hidden" name="sessionId" value={data.sessionId} />
+									<input type="hidden" name="ticketId" value={ticket.id} />
+									<input type="hidden" name="requestId" value={ticket.skipRequestId} />
+									<button class="queue-edit-link" type="submit">Skip · no response</button>
+								</form>
+								{/if}
 									{#if ticket.canCompleteService && ticket.completeRequestId && data.sessionId}
 										<form
 										method="POST"

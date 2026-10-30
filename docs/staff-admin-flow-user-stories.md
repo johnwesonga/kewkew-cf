@@ -22,7 +22,7 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 **Status tracking** — `Complete` means the story's acceptance criteria are implemented; `In progress` means some criteria remain; `Planned` means implementation has not started. Status tracks implementation in this repository, not production release.
 
-**Current implementation note** — SF-1 through SF-5 are Complete. SF-6 through SF-10 remain Planned; additional ticket transition commands and real-time synchronization are not implemented. The SF-2 board polls persisted state and can also be refreshed manually.
+**Current implementation note** — SF-1 through SF-6 are Complete. SF-7 through SF-10 remain Planned; additional ticket transition commands and real-time synchronization are not implemented. The SF-2 board polls persisted state and can also be refreshed manually.
 
 ### SF-1: Access assigned queues
 
@@ -116,7 +116,9 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 ### SF-6: Skip a visitor who does not respond
 
-**Status** — Planned
+**Status** — Complete
+
+**Implementation note** — Called tickets have a Skip · no response action on the live board. The server rechecks membership, location access, and the active session, conditionally moves only `called` tickets to `no_show`, records the staff actor and transition event in one D1 batch, and makes retries idempotent. No-show tickets leave active board, capacity, and position calculations; the visitor tracker presents the no-show state and staff can call the next waiting visitor.
 
 **User story** — As a queue operator, I want to mark a called visitor as a no-show so the queue can continue when they do not respond.
 

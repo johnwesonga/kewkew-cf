@@ -46,6 +46,10 @@ export function canCompleteService(status: StaffTicketStatus): boolean {
 	return resolveStaffTicketTransition(status, 'complete') === 'completed';
 }
 
+export function canSkipTicket(status: StaffTicketStatus): boolean {
+	return resolveStaffTicketTransition(status, 'skip') === 'no_show';
+}
+
 export function recallQueueSequence(nextQueueSequence: number): number | null {
 	if (!Number.isSafeInteger(nextQueueSequence) || nextQueueSequence < 1) return null;
 	return nextQueueSequence;

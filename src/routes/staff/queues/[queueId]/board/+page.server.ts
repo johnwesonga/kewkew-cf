@@ -5,7 +5,7 @@ import { and, asc, count, desc, eq, exists, inArray, not, sql } from 'drizzle-or
 import { createDatabase } from '#lib/server/database';
 import { locations, membershipLocationAccess, organizationMemberships, organizations, queueSessions, queues, services, ticketEvents, tickets } from '#lib/server/schema';
 import { presentStaffQueueBoard } from '#lib/staff-queue-board';
-import { canCallNext, canCompleteService, canStartServing } from '#lib/server/staff-ticket-rules';
+import { canCallNext, canCompleteService, canSkipTicket, canStartServing } from '#lib/server/staff-ticket-rules';
 
 export const load: PageServerLoad = async ({ locals, params, url }) => {
 	if (!locals.user) redirect(303, '/staff/sign-in');
@@ -119,7 +119,9 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 			canStartServing: canStartServing(ticket.status),
 			startRequestId: canStartServing(ticket.status) ? crypto.randomUUID() : null,
 			canCompleteService: canCompleteService(ticket.status),
-			completeRequestId: canCompleteService(ticket.status) ? crypto.randomUUID() : null
+			completeRequestId: canCompleteService(ticket.status) ? crypto.randomUUID() : null,
+			canSkip: canSkipTicket(ticket.status),
+			skipRequestId: canSkipTicket(ticket.status) ? crypto.randomUUID() : null
 		})),
 		canCallNext: canCallNext(session?.state ?? null, board.tickets),
 		callRequestId: activeSession ? crypto.randomUUID() : null,
@@ -129,6 +131,8 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 		replayedStart: url.searchParams.get('replayedStart') === '1',
 		completedTicket: url.searchParams.get('completed'),
 		replayedCompletion: url.searchParams.get('replayedCompletion') === '1',
+		skippedTicket: url.searchParams.get('skipped'),
+		replayedSkip: url.searchParams.get('replayedSkip') === '1',
 		emptyMessage: board.emptyMessage
 	};
 };
@@ -322,6 +326,194 @@ export const actions: Actions = {
 			redirect(303, `/staff/queues/${encodeURIComponent(queue.id)}/board?organization=${encodeURIComponent(organizationId)}&completed=${currentTicket.ticketNumber}&replayedCompletion=1`);
 		}
 		return invalid('This ticket is no longer being served. Refresh the board to see its latest state.', 409);
+	},
+	skipTicket: async ({ locals, params, request, url }) => {
+		if (!locals.user) redirect(303, '/staff/sign-in');
+		const organizationId = url.searchParams.get('organization') ?? '';
+		const form = await request.formData();
+		const sessionId = String(form.get('sessionId') ?? '');
+		const ticketId = String(form.get('ticketId') ?? '');
+		const requestId = String(form.get('requestId') ?? '');
+		const invalid = (message: string, status = 400) => fail(status, { message });
+		const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+		if (!organizationId || !isUuid(sessionId) || !isUuid(ticketId) || !isUuid(requestId)) {
+			return invalid('This skip form has expired. Refresh the board and try again.');
+		}
+
+		const db = createDatabase((cloudflareEnv as Env).DB);
+		const userId = locals.user.id;
+		const membership = await db.select({ role: organizationMemberships.role })
+			.from(organizationMemberships)
+			.where(and(
+				eq(organizationMemberships.organizationId, organizationId),
+				eq(organizationMemberships.userId, userId),
+				eq(organizationMemberships.status, 'active')
+			))
+			.get();
+		if (!membership) error(404, 'Queue not found');
+
+		const queue = await db.select({ id: queues.id, locationId: queues.locationId })
+			.from(queues)
+			.where(and(eq(queues.id, params.queueId), eq(queues.organizationId, organizationId)))
+			.get();
+		if (!queue) error(404, 'Queue not found');
+		const locationAccess = membership.role === 'admin'
+			? await db.select({ userId: organizationMemberships.userId }).from(organizationMemberships).where(and(
+				eq(organizationMemberships.organizationId, organizationId),
+				eq(organizationMemberships.userId, userId),
+				eq(organizationMemberships.role, 'admin'),
+				eq(organizationMemberships.status, 'active')
+			)).get()
+			: await db.select({ locationId: membershipLocationAccess.locationId })
+				.from(membershipLocationAccess)
+				.innerJoin(organizationMemberships, and(
+					eq(organizationMemberships.organizationId, membershipLocationAccess.organizationId),
+					eq(organizationMemberships.userId, membershipLocationAccess.userId)
+				))
+				.where(and(
+					eq(membershipLocationAccess.organizationId, organizationId),
+					eq(membershipLocationAccess.userId, userId),
+					eq(membershipLocationAccess.locationId, queue.locationId),
+					eq(organizationMemberships.role, 'operator'),
+					eq(organizationMemberships.status, 'active')
+				))
+				.get();
+		if (!locationAccess) error(404, 'Queue not found');
+
+		const previousUse = await db.select({
+			ticketNumber: tickets.ticketNumber,
+			organizationId: tickets.organizationId,
+			queueId: tickets.queueId,
+			queueSessionId: tickets.queueSessionId,
+			id: tickets.id
+		}).from(tickets).where(eq(tickets.transitionRequestId, requestId)).get();
+		if (previousUse) {
+			if (previousUse.organizationId === organizationId && previousUse.queueId === queue.id && previousUse.queueSessionId === sessionId && previousUse.id === ticketId) {
+				redirect(303, `/staff/queues/${encodeURIComponent(queue.id)}/board?organization=${encodeURIComponent(organizationId)}&skipped=${previousUse.ticketNumber}&replayedSkip=1`);
+			}
+			return invalid('This skip request was already used. Refresh the board and try again.', 409);
+		}
+
+		const activeSession = await db.select({ id: queueSessions.id })
+			.from(queueSessions)
+			.where(and(
+				eq(queueSessions.id, sessionId),
+				eq(queueSessions.organizationId, organizationId),
+				eq(queueSessions.queueId, queue.id),
+				inArray(queueSessions.state, ['open', 'paused'])
+			))
+			.get();
+		if (!activeSession) return invalid('This session is no longer active. Refresh the board and try again.', 409);
+
+		const operatorAssignment = exists(db.select({ locationId: membershipLocationAccess.locationId })
+			.from(membershipLocationAccess)
+			.innerJoin(organizationMemberships, and(
+				eq(organizationMemberships.organizationId, membershipLocationAccess.organizationId),
+				eq(organizationMemberships.userId, membershipLocationAccess.userId)
+			))
+			.where(and(
+				eq(membershipLocationAccess.organizationId, queueSessions.organizationId),
+				eq(membershipLocationAccess.userId, userId),
+				eq(membershipLocationAccess.locationId, queues.locationId),
+				eq(organizationMemberships.role, 'operator'),
+				eq(organizationMemberships.status, 'active')
+			)));
+		const activeAdmin = exists(db.select({ userId: organizationMemberships.userId })
+			.from(organizationMemberships)
+			.where(and(
+				eq(organizationMemberships.organizationId, queueSessions.organizationId),
+				eq(organizationMemberships.userId, userId),
+				eq(organizationMemberships.role, 'admin'),
+				eq(organizationMemberships.status, 'active')
+			)));
+		const authorizedMembership = exists(db.select({ userId: organizationMemberships.userId })
+			.from(organizationMemberships)
+			.where(and(
+				eq(organizationMemberships.organizationId, queueSessions.organizationId),
+				eq(organizationMemberships.userId, userId),
+				eq(organizationMemberships.status, 'active')
+			)));
+		const canOperateQueue = membership.role === 'admin' ? activeAdmin : operatorAssignment;
+		const candidate = db.select({ id: tickets.id })
+			.from(tickets)
+			.innerJoin(queueSessions, and(
+				eq(queueSessions.id, tickets.queueSessionId),
+				eq(queueSessions.organizationId, tickets.organizationId),
+				eq(queueSessions.queueId, tickets.queueId)
+			))
+			.innerJoin(queues, and(
+				eq(queues.id, tickets.queueId),
+				eq(queues.organizationId, tickets.organizationId)
+			))
+			.where(and(
+				eq(tickets.id, ticketId),
+				eq(tickets.organizationId, organizationId),
+				eq(tickets.queueId, queue.id),
+				eq(tickets.queueSessionId, activeSession.id),
+				eq(tickets.status, 'called'),
+				inArray(queueSessions.state, ['open', 'paused']),
+				authorizedMembership,
+				canOperateQueue,
+				not(exists(db.select({ id: tickets.id }).from(tickets).where(eq(tickets.transitionRequestId, requestId))))
+			))
+			.limit(1);
+
+		const now = new Date().toISOString();
+		const update = db.update(tickets).set({
+			status: 'no_show',
+			transitionRequestId: requestId,
+			updatedAt: now
+		}).where(and(
+			eq(tickets.status, 'called'),
+			inArray(tickets.id, candidate),
+			not(exists(db.select({ id: tickets.id }).from(tickets).where(eq(tickets.transitionRequestId, requestId))))
+		));
+		const event = db.insert(ticketEvents).select(db.select({
+			id: sql<string>`${crypto.randomUUID()}`.as('id'),
+			ticketId: tickets.id,
+			fromStatus: sql<'called'>`'called'`.as('from_status'),
+			toStatus: sql<'no_show'>`'no_show'`.as('to_status'),
+			actorType: sql<'staff'>`'staff'`.as('actor_type'),
+			actorId: sql<string>`${userId}`.as('actor_id'),
+			occurredAt: sql<string>`${now}`.as('occurred_at'),
+			metadata: sql<string>`${JSON.stringify({ requestId })}`.as('metadata'),
+			createdAt: sql<string>`${now}`.as('created_at')
+		}).from(tickets).where(and(
+			eq(tickets.id, ticketId),
+			eq(tickets.organizationId, organizationId),
+			eq(tickets.queueId, queue.id),
+			eq(tickets.queueSessionId, activeSession.id),
+			eq(tickets.transitionRequestId, requestId),
+			eq(tickets.status, 'no_show')
+		))).onConflictDoNothing();
+		let skippedTicketNumber: number | undefined;
+		try {
+			const result = await db.batch([update, event]);
+			if (result[0]?.meta.changes === 1 && result[1]?.meta.changes === 1) {
+				const ticket = await db.select({ ticketNumber: tickets.ticketNumber }).from(tickets)
+					.where(and(eq(tickets.id, ticketId), eq(tickets.queueSessionId, sessionId))).get();
+				skippedTicketNumber = ticket?.ticketNumber;
+			}
+		} catch (cause) {
+			console.error('Failed to skip queue ticket', cause instanceof Error ? cause.message : 'Unknown database error');
+			return invalid('Ticket could not be skipped. Refresh the board and try again.', 500);
+		}
+		if (skippedTicketNumber !== undefined) redirect(303, `/staff/queues/${encodeURIComponent(queue.id)}/board?organization=${encodeURIComponent(organizationId)}&skipped=${skippedTicketNumber}`);
+
+		const currentTicket = await db.select({
+			ticketNumber: tickets.ticketNumber,
+			status: tickets.status,
+			transitionRequestId: tickets.transitionRequestId
+		}).from(tickets).where(and(
+			eq(tickets.id, ticketId),
+			eq(tickets.organizationId, organizationId),
+			eq(tickets.queueId, queue.id),
+			eq(tickets.queueSessionId, sessionId)
+		)).get();
+		if (currentTicket?.transitionRequestId === requestId && currentTicket.status === 'no_show') {
+			redirect(303, `/staff/queues/${encodeURIComponent(queue.id)}/board?organization=${encodeURIComponent(organizationId)}&skipped=${currentTicket.ticketNumber}&replayedSkip=1`);
+		}
+		return invalid('This ticket is no longer called. Refresh the board to see its latest state.', 409);
 	},
 	startServing: async ({ locals, params, request, url }) => {
 		if (!locals.user) redirect(303, '/staff/sign-in');
