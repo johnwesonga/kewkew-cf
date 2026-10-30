@@ -347,7 +347,11 @@ export const actions: Actions = {
 				state: sql<'open'>`'open'`.as('state'),
 				openedAt: sql<string>`${now}`.as('opened_at'),
 				closedAt: sql<null>`NULL`.as('closed_at'),
-				openRequestId: sql<string>`${openRequestId}`.as('open_request_id')
+				openRequestId: sql<string>`${openRequestId}`.as('open_request_id'),
+				transitionRequestId: sql<null>`NULL`.as('transition_request_id'),
+				nextTicketNumber: sql<number>`1`.as('next_ticket_number'),
+				nextQueueSequence: sql<number>`1`.as('next_queue_sequence'),
+				lastJoinAttemptDigest: sql<null>`NULL`.as('last_join_attempt_digest')
 			})
 				.from(queues)
 				.innerJoin(locations, and(
