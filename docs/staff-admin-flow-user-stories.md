@@ -22,7 +22,7 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 **Status tracking** — `Complete` means the story's acceptance criteria are implemented; `In progress` means some criteria remain; `Planned` means implementation has not started. Status tracks implementation in this repository, not production release.
 
-**Current implementation note** — SF-1 through SF-4 are Complete. SF-5 through SF-10 remain Planned; additional ticket transition commands and real-time synchronization are not implemented. The SF-2 board polls persisted state and can also be refreshed manually.
+**Current implementation note** — SF-1 through SF-5 are Complete. SF-6 through SF-10 remain Planned; additional ticket transition commands and real-time synchronization are not implemented. The SF-2 board polls persisted state and can also be refreshed manually.
 
 ### SF-1: Access assigned queues
 
@@ -99,7 +99,9 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 ### SF-5: Complete service
 
-**Status** — Planned
+**Status** — Complete
+
+**Implementation note** — Serving tickets have a Complete service action on the live board. The server rechecks staff membership and queue access, conditionally moves only `serving` tickets to `completed`, records `completedAt` and a staff-attributed history event in one D1 batch, and makes retries idempotent. Completed tickets leave the active board and visitor position calculations; the visitor tracker polls and presents the completed state.
 
 **User story** — As a queue operator, I want to complete a visitor's service so their ticket leaves the active queue and the next visitor's position is accurate.
 

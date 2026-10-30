@@ -171,6 +171,14 @@
 							? "Start-serving request already processed for ticket"
 							: "Service started for ticket"} #{data.startedTicket}.
 					</p>{/if}
+				{#if data.completedTicket}<p
+						class="staff-feedback success-message"
+						role="status"
+					>
+						{data.replayedCompletion
+							? "Completion request already processed for ticket"
+							: "Service completed for ticket"} #{data.completedTicket}. The ticket has left the active queue.
+					</p>{/if}
 				{#if data.sessionId && !data.canCallNext}<p
 						class="queue-board-action-hint"
 					>
@@ -253,6 +261,17 @@
 												>Start serving</button
 											>
 										</form>
+									{/if}
+									{#if ticket.canCompleteService && ticket.completeRequestId && data.sessionId}
+										<form
+										method="POST"
+										action={`?/completeService&organization=${encodeURIComponent(data.organization.organizationId)}`}
+									>
+										<input type="hidden" name="sessionId" value={data.sessionId} />
+										<input type="hidden" name="ticketId" value={ticket.id} />
+										<input type="hidden" name="requestId" value={ticket.completeRequestId} />
+										<button class="queue-edit-link" type="submit">Complete service</button>
+									</form>
 									{/if}
 								</li>
 							{/each}

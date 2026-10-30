@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	canCallNext,
+	canCompleteService,
 	canStartServing,
 	isActiveStaffTicket,
 	recallQueueSequence,
@@ -82,6 +83,17 @@ describe('canStartServing', () => {
 	it.each(['waiting', 'serving', 'completed', 'cancelled', 'no_show'] as const)(
 		'disables starting service for %s tickets',
 		(status) => expect(canStartServing(status)).toBe(false)
+	);
+});
+
+describe('canCompleteService', () => {
+	it('allows completing only tickets that are being served', () => {
+		expect(canCompleteService('serving')).toBe(true);
+	});
+
+	it.each(['waiting', 'called', 'completed', 'cancelled', 'no_show'] as const)(
+		'disables completion for %s tickets',
+		(status) => expect(canCompleteService(status)).toBe(false)
 	);
 });
 
