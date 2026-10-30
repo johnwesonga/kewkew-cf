@@ -39,7 +39,7 @@
 				{
 					"binding": "DB",
 					"database_name": "kewkew-production",
-					"database_id": "00000000-0000-0000-0000-000000000003",
+					"database_id": "508bd6b1-d4c9-41e9-9b96-edc1b063a802",
 					"migrations_dir": "./migrations"
 				}
 			]

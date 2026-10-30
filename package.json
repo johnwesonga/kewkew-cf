@@ -17,7 +17,10 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"test": "vitest run --config vitest.config.ts",
 		"test:watch": "vitest --config vitest.config.ts",
-		"deploy": "npm run build && wrangler deploy"
+		"deploy:preview": "npm run build && wrangler deploy --env preview",
+		"deploy:production": "npm run build && wrangler deploy --env production",
+		"deploy:dry-run": "WRANGLER_WRITE_LOGS=false wrangler deploy --dry-run --env= --secrets-file .dev.vars.example --outdir .wrangler/dry-run",
+		"deploy": "npm run deploy:production"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-cloudflare": "^8.0.1",

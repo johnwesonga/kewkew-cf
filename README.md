@@ -66,4 +66,17 @@ npm run db:migrate:preview
 npm run db:migrate:production
 ```
 
+Deploy to the named environment with its matching D1 binding:
+
+```sh
+npm run deploy:preview
+npm run deploy:production
+```
+
+Before production deployment, replace the production D1 placeholder ID, apply
+the reviewed migrations to that database, and configure `BETTER_AUTH_SECRET`,
+`KEWKEW_BOOTSTRAP_SECRET`, `RESEND_API_KEY`, and `INVITATION_FROM_EMAIL` for
+the production Worker environment. The default `npm run deploy` targets
+production; use the explicit preview script when validating a preview release.
+
 No remote resources or production configuration are created by the local setup.
