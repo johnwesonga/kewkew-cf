@@ -187,6 +187,14 @@
 							? "Skip request already processed for ticket"
 							: "Ticket marked as no-show"} #{data.skippedTicket}. The ticket has left the active queue.
 					</p>{/if}
+				{#if data.recalledTicket}<p
+						class="staff-feedback success-message"
+						role="status"
+					>
+						{data.replayedRecall
+							? "Recall request already processed for ticket"
+							: "Ticket requeued at the end of the line"} #{data.recalledTicket}.
+					</p>{/if}
 				{#if data.sessionId && !data.canCallNext}<p
 						class="queue-board-action-hint"
 					>
@@ -295,6 +303,36 @@
 								</li>
 							{/each}
 						</ol>
+					</section>
+				{/if}
+				{#if data.noShowTickets.length > 0}
+					<section class="staff-card queue-board-card" aria-labelledby="no-show-title">
+						<div class="staff-card-heading">
+							<div>
+								<h2 id="no-show-title">No-show visitors</h2>
+								<p>Requeue a visitor when they return. They will join behind everyone already waiting.</p>
+							</div>
+						</div>
+						<ul class="queue-board-list">
+							{#each data.noShowTickets as ticket (ticket.id)}
+								<li class="queue-board-ticket">
+									<span class="queue-board-number">{ticket.ticketNumber}</span>
+									<div class="queue-board-visitor">
+										<strong>{ticket.firstName ? `${ticket.firstName} ${ticket.lastName ?? ""}`.trim() : `Ticket #${ticket.ticketNumber}`}</strong>
+										<small>No-show</small>
+									</div>
+									<span class="queue-board-status">no-show</span>
+									{#if ticket.canRecall && ticket.recallRequestId && data.sessionId}
+										<form method="POST" action={`?/recallTicket&organization=${encodeURIComponent(data.organization.organizationId)}`}>
+											<input type="hidden" name="sessionId" value={data.sessionId} />
+											<input type="hidden" name="ticketId" value={ticket.id} />
+											<input type="hidden" name="requestId" value={ticket.recallRequestId} />
+											<button class="queue-edit-link" type="submit">Requeue visitor</button>
+										</form>
+									{/if}
+								</li>
+							{/each}
+						</ul>
 					</section>
 				{/if}
 			</div>

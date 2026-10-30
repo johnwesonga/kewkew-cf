@@ -50,6 +50,10 @@ export function canSkipTicket(status: StaffTicketStatus): boolean {
 	return resolveStaffTicketTransition(status, 'skip') === 'no_show';
 }
 
+export function canRecallTicket(status: StaffTicketStatus): boolean {
+	return resolveStaffTicketTransition(status, 'recall') === 'waiting';
+}
+
 export function recallQueueSequence(nextQueueSequence: number): number | null {
 	if (!Number.isSafeInteger(nextQueueSequence) || nextQueueSequence < 1) return null;
 	return nextQueueSequence;

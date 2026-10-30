@@ -22,7 +22,7 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 **Status tracking** — `Complete` means the story's acceptance criteria are implemented; `In progress` means some criteria remain; `Planned` means implementation has not started. Status tracks implementation in this repository, not production release.
 
-**Current implementation note** — SF-1 through SF-6 are Complete. SF-7 through SF-10 remain Planned; additional ticket transition commands and real-time synchronization are not implemented. The SF-2 board polls persisted state and can also be refreshed manually.
+**Current implementation note** — SF-1 through SF-6 and SF-9 are Complete. SF-7, SF-8, and SF-10 remain Planned; staff cancellation, real-time synchronization, and the focused workspace navigation flow are not implemented. The SF-2 board polls persisted state and can also be refreshed manually.
 
 ### SF-1: Access assigned queues
 
@@ -166,7 +166,9 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 ### SF-9: Requeue a returning no-show visitor
 
-**Status** — Planned
+**Status** — Complete
+
+**Implementation note** — The live board lists no-show tickets from the current session and offers a Requeue visitor action. The server rechecks staff membership, location access, and active session, allocates the session's next queue sequence atomically, preserves the ticket number, moves only `no_show` tickets back to `waiting`, advances the session sequence, and records a staff-attributed event in the same D1 batch. Retries are idempotent, and the visitor page and active board reflect the waiting state on their next poll.
 
 **User story** — As a queue operator, I want to requeue a visitor who returns after being marked as a no-show so they can receive service without jumping ahead of visitors already waiting.
 
