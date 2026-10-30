@@ -56,10 +56,9 @@ npm run cf:types
 ## D1 environments
 
 Local development uses the `kewkew-local` D1 database in Wrangler's local
-simulator. Preview and production are configured with separate database names
-and placeholder IDs in `wrangler.jsonc`; create those resources in Cloudflare
-and replace the IDs before applying remote migrations. Use the environment
-specific scripts only after that setup:
+simulator. Preview and production use separate Cloudflare D1 databases
+configured in `wrangler.jsonc`. Use the environment-specific migration scripts
+after the corresponding databases are created and their IDs are configured:
 
 ```sh
 npm run db:migrate:preview
@@ -73,10 +72,17 @@ npm run deploy:preview
 npm run deploy:production
 ```
 
-Before production deployment, replace the production D1 placeholder ID, apply
-the reviewed migrations to that database, and configure `BETTER_AUTH_SECRET`,
+Before production deployment, apply the reviewed migrations to the production
+database and configure `BETTER_AUTH_SECRET`,
 `KEWKEW_BOOTSTRAP_SECRET`, `RESEND_API_KEY`, and `INVITATION_FROM_EMAIL` for
 the production Worker environment. The default `npm run deploy` targets
 production; use the explicit preview script when validating a preview release.
 
 No remote resources or production configuration are created by the local setup.
+
+## GitHub Actions
+
+Pull requests targeting `main` and pushes to `main` run dependency installation,
+Svelte/TypeScript checks, unit tests, and a production build. This workflow does
+not deploy; Cloudflare deployment remains an explicit step using the scripts
+above.

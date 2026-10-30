@@ -23,7 +23,6 @@ for organization setup and queue operations.
 ## Environment setup
 
 The local D1 binding works with Wrangler's local simulator and needs no account.
-Preview and production bindings currently use placeholder database IDs. Before
-using those environments, create independent D1 databases named
-`kewkew-preview` and `kewkew-production`, then replace the matching IDs in
-`wrangler.jsonc`. Do not point either binding at production Phoenix data.
+Preview and production use independent D1 databases named `kewkew-preview`
+and `kewkew-production`, with their IDs configured in `wrangler.jsonc`. Do not
+point either binding at production Phoenix data.
