@@ -43,7 +43,7 @@
 		<StaffSidebar organizationId={data.organization.organizationId} organizationRole="admin" locationCount={data.locationCount} active="queues" />
 		<main class="staff-content">
 			<div class="staff-page">
-				<a class="queue-back-link" href={`/staff/queues${organizationQuery}`}>← Back to queues</a>
+				<a class="queue-back-link" href={`/staff/queues${organizationQuery}`}>← Back to queue configuration</a>
 				<header class="staff-page-heading queue-edit-heading">
 					<div>
 						<p class="eyebrow">Queue configuration</p>

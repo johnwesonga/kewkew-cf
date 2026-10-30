@@ -83,14 +83,14 @@
 			organizationId={data.organization.organizationId}
 			organizationRole={data.organization.role}
 			locationCount={data.locationCount}
-			active="queues"
+			active="live"
 		/>
 		<main class="staff-content">
 			<div class="staff-page">
 				<a
 					class="queue-back-link"
-					href={`/staff/queues${organizationQuery}`}
-					>← Back to queues</a
+					 href={`/staff/live${organizationQuery}`}
+					>← Back to live queues</a
 				>
 				<header class="staff-page-heading">
 					<div>

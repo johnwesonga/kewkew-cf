@@ -3,12 +3,13 @@
 		organizationId: string | null;
 		organizationRole: 'admin' | 'operator' | null;
 		locationCount: number;
-		active: 'overview' | 'setup' | 'staff' | 'queues';
+		active: 'overview' | 'live' | 'setup' | 'staff' | 'queues';
 	};
 	let { organizationId, organizationRole, locationCount, active }: Props = $props();
 	let isAdmin = $derived(organizationRole === 'admin' && organizationId !== null);
 	let query = $derived(organizationId ? `?organization=${encodeURIComponent(organizationId)}` : '');
 	let overviewUrl = $derived(`/staff${query}`);
+	let liveUrl = $derived(`/staff/live${query}`);
 	let setupUrl = $derived(`/staff/setup${query}`);
 	let profileUrl = $derived(`${overviewUrl}#organization-profile-title`);
 	let locationsUrl = $derived(`${overviewUrl}#locations-title`);
@@ -20,8 +21,8 @@
 <aside class="staff-sidebar">
 	<p class="staff-sidebar-label">Workspace</p>
 	<nav class="staff-nav-list" aria-label="Staff workspace">
-		<a class:active={active === 'overview'} class="staff-nav-link" href={overviewUrl} aria-current={active === 'overview' ? 'page' : undefined}>
-			<span class="staff-nav-icon" aria-hidden="true">▦</span> Overview
+		<a class:active={active === 'live'} class="staff-nav-link" href={liveUrl} aria-current={active === 'live' ? 'page' : undefined}>
+			<span class="staff-nav-icon" aria-hidden="true">▦</span> Live queues
 		</a>
 		{#if isAdmin}
 			<a class:active={active === 'setup'} class="staff-nav-link" href={setupUrl} aria-current={active === 'setup' ? 'page' : undefined}>
@@ -31,13 +32,9 @@
 				<a href={profileUrl}>Organization</a>
 				<a href={locationsUrl}>Locations</a>
 				<a href={servicesUrl}>Services</a>
+				<a class:active={active === 'queues'} href={queuesUrl} aria-current={active === 'queues' ? 'page' : undefined}>Queue configuration</a>
 				<a class:active={active === 'staff'} href={staffUrl} aria-current={active === 'staff' ? 'page' : undefined}>Staff access</a>
 			</div>
-		{/if}
-		{#if organizationId}
-			<a class:active={active === 'queues'} class="staff-nav-link" href={queuesUrl} aria-current={active === 'queues' ? 'page' : undefined}>
-				<span class="staff-nav-icon" aria-hidden="true">≡</span> Queues
-			</a>
 		{/if}
 	</nav>
 	{#if organizationRole}

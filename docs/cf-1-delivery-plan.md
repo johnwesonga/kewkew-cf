@@ -136,11 +136,12 @@ administrator. Route data access uses Drizzle query builders, including the
 conditional writes collected into Drizzle's D1 batch API. Public
 self-registration remains disabled.
 
-The staff workspace now has a shared sidebar modeled on Phoenix's Workspace and
-Setup navigation. Setup links are rendered only for active organization admins,
-and `/staff/setup` enforces that role on the server. Organization, location,
-and service entries link to their current sections; Staff access opens the new
-membership lifecycle screen. Queue setup is shown as unavailable until CF-2.
+The staff workspace has separate Live queues and Setup navigation. Live queues
+lists queues visible to the signed-in staff member and links to their
+operational boards. Setup links are rendered only for active organization
+admins, and setup routes enforce that role on the server. Organization,
+location, service, queue configuration, and Staff access pages are grouped
+under Setup.
 
 ## CF-1E implementation note
 

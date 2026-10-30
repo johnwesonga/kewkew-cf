@@ -138,15 +138,10 @@
 			<div class="staff-page">
 				<header class="staff-page-heading">
 					<div>
-						<p class="eyebrow">
-							{data.organization.role === "admin"
-								? "Queue configuration"
-								: "Operator workspace"}
-						</p>
-						<h1>Queues</h1>
+						<p class="eyebrow">Setup</p>
+						<h1>Queue configuration</h1>
 						<p class="staff-page-subhead">
-							Review queue setup and current session state for {data
-								.organization.organizationName}.
+							Configure queues and operating sessions for {data.organization.organizationName}.
 						</p>
 					</div>
 					<span class="staff-active-pill"
@@ -458,7 +453,7 @@
 						class="staff-card queue-empty"
 						aria-labelledby="queue-empty-title"
 					>
-						<p class="eyebrow">Queue configuration</p>
+						<p class="eyebrow">Queue setup</p>
 						<h2 id="queue-empty-title">No queues yet</h2>
 						<p>
 							Queues for your {data.organization.role === "admin"

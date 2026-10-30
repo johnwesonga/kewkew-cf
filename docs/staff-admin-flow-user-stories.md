@@ -22,13 +22,13 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 **Status tracking** — `Complete` means the story's acceptance criteria are implemented; `In progress` means some criteria remain; `Planned` means implementation has not started. Status tracks implementation in this repository, not production release.
 
-**Current implementation note** — SF-1 through SF-6 and SF-9 are Complete. SF-7, SF-8, and SF-10 remain Planned; staff cancellation, real-time synchronization, and the focused workspace navigation flow are not implemented. The SF-2 board polls persisted state and can also be refreshed manually.
+**Current implementation note** — SF-1 through SF-6 and SF-9 through SF-10 are Complete. SF-7 and SF-8 remain Planned; staff cancellation and real-time synchronization are not implemented. The SF-2 board polls persisted state and can also be refreshed manually.
 
 ### SF-1: Access assigned queues
 
 **Status** — Complete
 
-**Implementation note** — Staff sign-in uses Better Auth with public sign-up disabled; accounts are created through administrator-controlled invitations. Sign-in lands on `/staff/queues`. The server requires active organization membership and filters operator queues to assigned locations; the response is filtered again by organization, role, membership status, and assigned locations. A signed-in user without active membership is directed to the no-access view. Administrator-only staff management rechecks active admin access for each change, restricts operator location assignments to the organization, and protects the last active administrator from suspension or demotion.
+**Implementation note** — Staff sign-in uses Better Auth with public sign-up disabled; accounts are created through administrator-controlled invitations. Sign-in lands on `/staff/live`. The server requires active organization membership and filters operator queues to assigned locations; the response is filtered again by organization, role, membership status, and assigned locations. A signed-in user without active membership is directed to the no-access view. Administrator-only staff management rechecks active admin access for each change, restricts operator location assignments to the organization, and protects the last active administrator from suspension or demotion.
 
 **User story** — As a staff member, I want to sign in and see only the queues I am assigned to so that visitor information and queue controls are limited to my work.
 
@@ -48,7 +48,7 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 **Status** — Complete
 
-**Implementation note** — The authorized live board is available from each queue row at `/staff/queues/[queueId]/board`. It loads the current session’s waiting, called, and serving tickets in queue-sequence order, hides names for anonymous tickets, distinguishes empty, paused, closed, and sessionless states, and refreshes every 10 seconds with a manual refresh control. Board access is scoped to active membership and assigned locations.
+**Implementation note** — The authorized live board is available from each queue row in `/staff/live` at `/staff/queues/[queueId]/board`. It loads the current session’s waiting, called, and serving tickets in queue-sequence order, hides names for anonymous tickets, distinguishes empty, paused, closed, and sessionless states, and refreshes every 10 seconds with a manual refresh control. Board access is scoped to active membership and assigned locations.
 
 **User story** — As a queue operator, I want to see waiting visitors and their current states so that I can serve the queue in order.
 
@@ -186,9 +186,9 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 ### SF-10: Navigate between queue operations and workspace setup
 
-**Status** — Planned
+**Status** — Complete
 
-**Implementation note** — Administrator setup navigation and configuration views exist. The focused staff ticket-operation view and links from it to operational queue boards are not implemented, so the full story remains planned.
+**Implementation note** — `/staff/live` is the focused queue operations view, showing only queues visible to the signed-in staff member and linking to their live boards. Session controls remain available there with the existing membership and location checks. Organization, location, service, staff, and queue configuration are grouped under the administrator-only Setup navigation. Operators are redirected to Live queues when they request organization setup or queue configuration URLs directly; the ticket board remains limited to operational ticket actions.
 
 **User story** — As a staff member, I want queue operations and workspace setup in separate views so I can quickly find the actions relevant to my role.
 

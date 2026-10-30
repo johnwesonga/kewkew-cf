@@ -42,6 +42,9 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		? memberships.find((membership) => membership.organizationId === requestedOrganizationId)
 		: memberships[0];
 	if (!organization) error(404, 'Workspace not found');
+	if (organization.role !== 'admin') {
+		redirect(303, `/staff/live?organization=${encodeURIComponent(organization.organizationId)}`);
+	}
 
 	const locationCountRows = organization.role === 'admin'
 		? await db.select({ value: count() }).from(locations).where(and(
@@ -104,21 +107,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		))
 		.where(and(
 			eq(queues.organizationId, organization.organizationId),
-			organization.role === 'operator'
-				? exists(db.select({ locationId: membershipLocationAccess.locationId })
-					.from(membershipLocationAccess)
-					.innerJoin(organizationMemberships, and(
-						eq(organizationMemberships.organizationId, membershipLocationAccess.organizationId),
-						eq(organizationMemberships.userId, membershipLocationAccess.userId)
-					))
-					.where(and(
-						eq(membershipLocationAccess.organizationId, queues.organizationId),
-						eq(membershipLocationAccess.locationId, queues.locationId),
-						eq(membershipLocationAccess.userId, userId),
-						eq(organizationMemberships.role, 'operator'),
-						eq(organizationMemberships.status, 'active')
-					)))
-				: exists(db.select({ userId: organizationMemberships.userId })
+		exists(db.select({ userId: organizationMemberships.userId })
 					.from(organizationMemberships)
 					.where(and(
 						eq(organizationMemberships.organizationId, queues.organizationId),
@@ -128,20 +117,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 					)))
 		))
 		.orderBy(asc(sql`lower(${locations.name})`), asc(sql`lower(${queues.name})`), asc(queues.id));
-	const assignedLocationRows = organization.role === 'operator'
-		? await db.select({ locationId: membershipLocationAccess.locationId })
-			.from(membershipLocationAccess)
-			.innerJoin(organizationMemberships, and(
-				eq(organizationMemberships.organizationId, membershipLocationAccess.organizationId),
-				eq(organizationMemberships.userId, membershipLocationAccess.userId)
-			))
-			.where(and(
-				eq(membershipLocationAccess.organizationId, organization.organizationId),
-				eq(membershipLocationAccess.userId, userId),
-				eq(organizationMemberships.role, 'operator'),
-				eq(organizationMemberships.status, 'active')
-			))
-		: [];
+	const assignedLocationRows: { locationId: string }[] = [];
 	const visibleQueues = filterStaffQueues(rows, {
 		organizationId: organization.organizationId,
 		role: organization.role,
@@ -188,6 +164,8 @@ export const actions: Actions = {
 		if (!locals.user) redirect(303, '/staff/sign-in');
 		const form = await request.formData();
 		const organizationId = url.searchParams.get('organization') ?? '';
+		const returnPath = String(form.get('returnTo') ?? '') === '/staff/live' ? '/staff/live' : '/staff/queues';
+		const returnTo = (result: string) => `${returnPath}?organization=${encodeURIComponent(organizationId)}&${result}`;
 		const queueId = String(form.get('queueId') ?? '');
 		const sessionId = String(form.get('sessionId') ?? '');
 		const requestId = String(form.get('requestId') ?? '');
@@ -243,12 +221,12 @@ export const actions: Actions = {
 			.from(queueSessionEvents)
 			.where(eq(queueSessionEvents.requestId, requestId))
 			.get();
-		if (priorRequest) redirect(303, `/staff/queues?organization=${encodeURIComponent(organizationId)}&sessionUnchanged=1`);
+		if (priorRequest) redirect(303, returnTo('sessionUnchanged=1'));
 		const resolvedTransition = resolveSessionTransition(session.state, transition as 'pause' | 'resume' | 'close');
 		if (!resolvedTransition) return invalid('Closed sessions cannot be paused, resumed, or closed again.', 409);
 		const { nextState, changed } = resolvedTransition;
 		if (!changed) {
-			redirect(303, `/staff/queues?organization=${encodeURIComponent(organizationId)}&sessionUnchanged=1`);
+			redirect(303, returnTo('sessionUnchanged=1'));
 		}
 
 		const now = new Date().toISOString();
@@ -284,16 +262,18 @@ export const actions: Actions = {
 				eq(queueSessions.id, sessionId),
 				eq(queueSessions.organizationId, organizationId)
 			)).get();
-			if (current?.state === nextState) redirect(303, `/staff/queues?organization=${encodeURIComponent(organizationId)}&sessionUnchanged=1`);
+			if (current?.state === nextState) redirect(303, returnTo('sessionUnchanged=1'));
 			return invalid('The session changed before this request completed. Refresh the page and try again.', 409);
 		}
 
-		redirect(303, `/staff/queues?organization=${encodeURIComponent(organizationId)}&sessionUpdated=${nextState}`);
+		redirect(303, returnTo(`sessionUpdated=${nextState}`));
 	},
 	openSession: async ({ locals, request, url }) => {
 		if (!locals.user) redirect(303, '/staff/sign-in');
 		const form = await request.formData();
 		const organizationId = url.searchParams.get('organization') ?? '';
+		const returnPath = String(form.get('returnTo') ?? '') === '/staff/live' ? '/staff/live' : '/staff/queues';
+		const returnTo = (result: string) => `${returnPath}?organization=${encodeURIComponent(organizationId)}&${result}`;
 		const queueId = String(form.get('queueId') ?? '');
 		const openRequestId = String(form.get('openRequestId') ?? '');
 		const invalid = (message: string, status = 400) => fail(status, { message });
@@ -399,7 +379,7 @@ export const actions: Actions = {
 					eq(queueSessions.openRequestId, openRequestId)
 				))
 				.get();
-			if (priorRequest) redirect(303, `/staff/queues?organization=${encodeURIComponent(organizationId)}&opened=1`);
+			if (priorRequest) redirect(303, returnTo('opened=1'));
 
 			const existing = await db.select({ id: queueSessions.id })
 				.from(queueSessions)
@@ -413,7 +393,7 @@ export const actions: Actions = {
 			return invalid('The queue changed before the session could open. Refresh the page and try again.', 409);
 		}
 
-		redirect(303, `/staff/queues?organization=${encodeURIComponent(organizationId)}&opened=1`);
+		redirect(303, returnTo('opened=1'));
 	},
 	setQueueActive: async ({ locals, request, url }) => {
 		if (!locals.user) redirect(303, '/staff/sign-in');

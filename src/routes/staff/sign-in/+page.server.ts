@@ -22,6 +22,6 @@ export const actions: Actions = {
 			return fail(400, { message: 'The email or password is incorrect.' });
 		}
 
-		redirect(303, '/staff/queues');
+		redirect(303, '/staff/live');
 	}
 };

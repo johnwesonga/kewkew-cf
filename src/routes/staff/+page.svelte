@@ -76,7 +76,7 @@
 			organizationId={data.organization?.organizationId ?? null}
 			organizationRole={data.organization?.role ?? null}
 			locationCount={data.locations.length}
-			active="overview"
+			active="setup"
 		/>
 
 		<main class="staff-content">

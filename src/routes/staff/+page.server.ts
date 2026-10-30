@@ -53,6 +53,9 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		: memberships[0];
 
 	if (!organization) error(404, 'Workspace not found');
+	if (organization.role === 'operator') {
+		redirect(303, `/staff/live?organization=${encodeURIComponent(organization.organizationId)}`);
+	}
 
 	const locationsResult = organization.role === 'admin'
 		? await db
