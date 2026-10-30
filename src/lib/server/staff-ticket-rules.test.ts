@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	canCallNext,
+	canStartServing,
 	isActiveStaffTicket,
 	recallQueueSequence,
 	resolveStaffTicketTransition,
@@ -71,6 +72,17 @@ describe('canCallNext', () => {
 	it('disables calling when no ticket is waiting', () => {
 		expect(canCallNext('open', [{ status: 'called' }])).toBe(false);
 	});
+});
+
+describe('canStartServing', () => {
+	it('allows starting service only for called tickets', () => {
+		expect(canStartServing('called')).toBe(true);
+	});
+
+	it.each(['waiting', 'serving', 'completed', 'cancelled', 'no_show'] as const)(
+		'disables starting service for %s tickets',
+		(status) => expect(canStartServing(status)).toBe(false)
+	);
 });
 
 describe('recallQueueSequence', () => {

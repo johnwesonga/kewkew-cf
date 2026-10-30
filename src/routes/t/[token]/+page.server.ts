@@ -3,6 +3,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { eq } from 'drizzle-orm';
 import { createDatabase } from '#lib/server/database';
+import { getVisitorTicketPosition } from '#lib/visitor-ticket-presentation';
 import { cancelTrackedTicket, getTicketByTrackingCredential } from '#lib/server/visitor-join';
 import { digestCredential, isValidCredential } from '#lib/server/visitor-credential';
 import { organizations, tickets } from '#lib/server/schema';
@@ -22,7 +23,9 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
 		ticket: {
 			number: ticket.ticketNumber,
 			status: ticket.status,
-			position: ['waiting', 'called', 'serving'].includes(ticket.status) ? ticket.position : null,
+			position: ['waiting', 'called', 'serving'].includes(ticket.status)
+				? getVisitorTicketPosition(ticket.status, ticket.position)
+				: null,
 			queueName: ticket.queueName,
 			organizationName: queueContext?.organizationName ?? 'Queue',
 			serviceName: ticket.serviceName,

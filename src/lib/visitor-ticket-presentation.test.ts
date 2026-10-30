@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { getVisitorTicketPresentation } from './visitor-ticket-presentation';
+import { getVisitorTicketPosition, getVisitorTicketPresentation } from './visitor-ticket-presentation';
+
+describe('getVisitorTicketPosition', () => {
+	it('places a ticket being served at the front of the line', () => {
+		expect(getVisitorTicketPosition('serving', 2)).toBe(1);
+	});
+
+	it.each(['waiting', 'called'] as const)('keeps the queue position for %s tickets', (status) => {
+		expect(getVisitorTicketPosition(status, 2)).toBe(2);
+	});
+});
 
 describe('getVisitorTicketPresentation', () => {
 	it('gives called tickets a direct, ticket-specific service desk instruction', () => {

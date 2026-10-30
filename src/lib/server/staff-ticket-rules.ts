@@ -38,6 +38,10 @@ export function canCallNext(
 	return (sessionState === 'open' || sessionState === 'paused') && tickets.some((ticket) => ticket.status === 'waiting');
 }
 
+export function canStartServing(status: StaffTicketStatus): boolean {
+	return resolveStaffTicketTransition(status, 'start_serving') === 'serving';
+}
+
 export function recallQueueSequence(nextQueueSequence: number): number | null {
 	if (!Number.isSafeInteger(nextQueueSequence) || nextQueueSequence < 1) return null;
 	return nextQueueSequence;

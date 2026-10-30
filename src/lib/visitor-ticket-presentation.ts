@@ -1,5 +1,9 @@
 export type VisitorTicketStatus = 'waiting' | 'called' | 'serving' | 'completed' | 'cancelled' | 'no_show';
 
+export function getVisitorTicketPosition(status: VisitorTicketStatus, queuePosition: number): number {
+	return status === 'serving' ? 1 : queuePosition;
+}
+
 export function getVisitorTicketPresentation(
 	status: VisitorTicketStatus,
 	ticketNumber: number,

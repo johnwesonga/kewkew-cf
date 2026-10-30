@@ -22,7 +22,7 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 **Status tracking** — `Complete` means the story's acceptance criteria are implemented; `In progress` means some criteria remain; `Planned` means implementation has not started. Status tracks implementation in this repository, not production release.
 
-**Current implementation note** — SF-1 through SF-3 are Complete. SF-4 through SF-10 remain Planned; additional ticket transition commands and real-time synchronization are not implemented. The SF-2 board polls persisted state and can also be refreshed manually.
+**Current implementation note** — SF-1 through SF-4 are Complete. SF-5 through SF-10 remain Planned; additional ticket transition commands and real-time synchronization are not implemented. The SF-2 board polls persisted state and can also be refreshed manually.
 
 ### SF-1: Access assigned queues
 
@@ -82,7 +82,9 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 ### SF-4: Start serving a called visitor
 
-**Status** — Planned
+**Status** — Complete
+
+**Implementation note** — Each called ticket on the live board has a Start serving action. The server rechecks active membership and queue access, conditionally updates only that ticket from `called` to `serving`, and records `startedAt`, the request ID, and a staff-attributed history event in one D1 batch. Replays are idempotent; stale requests return a conflict and the refreshed board shows the persisted state.
 
 **User story** — As a queue operator, I want to mark a called visitor as being served so the visitor and other staff know service has started.
 
