@@ -65,24 +65,48 @@ npm run db:migrate:preview
 npm run db:migrate:production
 ```
 
-Deploy to the named environment with its matching D1 binding:
+Preview migrations are manual. Apply any new preview migrations before merging
+code that depends on them, because the GitHub Actions deployment does not run
+migrations:
+
+```sh
+npm run db:migrate:preview
+```
+
+Deploy locally to the named environment with its matching D1 binding:
 
 ```sh
 npm run deploy:preview
 npm run deploy:production
 ```
 
-Before production deployment, apply the reviewed migrations to the production
-database and configure `BETTER_AUTH_SECRET`,
-`KEWKEW_BOOTSTRAP_SECRET`, `RESEND_API_KEY`, and `INVITATION_FROM_EMAIL` for
-the production Worker environment. The default `npm run deploy` targets
-production; use the explicit preview script when validating a preview release.
+The preview Worker is `kewkew-preview`, bound to the separate
+`kewkew-preview` D1 database. Configure `BETTER_AUTH_SECRET`,
+`KEWKEW_BOOTSTRAP_SECRET`, `RESEND_API_KEY`, and `INVITATION_FROM_EMAIL` as
+Worker secrets for the preview environment. Use unique preview authentication
+and bootstrap secrets. Do not reuse local `.dev.vars` or production values.
+
+Before production deployment, apply reviewed migrations to the production
+database and configure the same application secrets for the production Worker.
+The default `npm run deploy` targets production; use the explicit preview
+script when validating a preview release.
 
 No remote resources or production configuration are created by the local setup.
 
 ## GitHub Actions
 
-Pull requests targeting `main` and pushes to `main` run dependency installation,
-Svelte/TypeScript checks, unit tests, and a production build. This workflow does
-not deploy; Cloudflare deployment remains an explicit step using the scripts
-above.
+Pull requests targeting `main` run dependency installation, Svelte/TypeScript
+checks, unit tests, and a Worker build. Pushes to `main` run the same validation
+and then automatically deploy the preview Worker. The workflow does not deploy
+on pull requests, apply D1 migrations, or deploy to production.
+
+The GitHub Actions `preview` environment must contain these secrets:
+
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+
+The Worker application secrets are configured directly on the Cloudflare
+preview Worker, separately from GitHub Actions. To review schema changes on
+preview, apply migrations with `npm run db:migrate:preview` before merging the
+code that requires them. Find the deployed preview URL in the Cloudflare
+Workers dashboard or in the Wrangler deployment output.
