@@ -2544,6 +2544,26 @@ select {
 	background: radial-gradient(ellipse at 84% 40%, rgba(72, 117, 87, .2), transparent 35%), var(--canvas);
 }
 
+:root[data-color-scheme='dark'] .setup-page {
+	background: radial-gradient(ellipse at 14% 38%, rgba(72, 117, 87, .2), transparent 34%), var(--canvas);
+}
+
+:root[data-color-scheme='dark'] .setup-page .intro-copy,
+:root[data-color-scheme='dark'] .setup-page .setup-note small,
+:root[data-color-scheme='dark'] .setup-page footer {
+	color: var(--muted);
+}
+
+:root[data-color-scheme='dark'] .setup-page .note-icon,
+:root[data-color-scheme='dark'] .setup-page .step-badge {
+	background: var(--mint);
+	color: var(--green-dark);
+}
+
+:root[data-color-scheme='dark'] .setup-page .step-badge span {
+	color: var(--muted);
+}
+
 :root[data-color-scheme='dark'] .welcome-copy,
 :root[data-color-scheme='dark'] .welcome-note small {
 	color: var(--muted);

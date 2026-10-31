@@ -100,7 +100,7 @@
 </div>
 
 <style>
-	.setup-page { background: radial-gradient(ellipse at 14% 38%, rgba(212, 240, 120, .17), transparent 34%), #f4f7f4; }
+	.setup-page { background: radial-gradient(ellipse at 14% 38%, rgba(212, 240, 120, .17), transparent 34%), var(--canvas); color: var(--ink); }
 	.setup-page main { display: grid; grid-template-columns: minmax(240px, .8fr) minmax(420px, 1.2fr); align-items: center; gap: clamp(42px, 7vw, 100px); width: min(1050px, calc(100% - 48px)); margin: 0 auto; padding: 58px 0 64px; }
 	.intro { padding-bottom: 22px; }
 	.intro h1 { max-width: 410px; margin: 0; font-size: clamp(36px, 4.5vw, 54px); line-height: 1.02; letter-spacing: -.06em; }
