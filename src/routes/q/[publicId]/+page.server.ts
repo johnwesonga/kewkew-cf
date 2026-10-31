@@ -12,7 +12,7 @@ const duplicatePreventionEnabled = !(import.meta.env.DEV && (process.env.BROWSER
 const browserCookie = 'kewkew_browser';
 
 function applyPrivateHeaders(setHeaders: (headers: Record<string, string>) => void) {
-	setHeaders({ 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' });
+	setHeaders({ 'cache-control': 'no-store', 'referrer-policy': 'same-origin' });
 }
 
 export const load: PageServerLoad = async ({ params, cookies, setHeaders }) => {
