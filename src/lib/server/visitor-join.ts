@@ -276,9 +276,15 @@ export async function cancelTrackedTicket(
 			isNull(trackingCredentials.revokedAt),
 			or(isNull(trackingCredentials.expiresAt), sql`${trackingCredentials.expiresAt} > ${now}`)
 		)));
+	const sessionCanAcceptTransitions = exists(db.select({ id: queueSessions.id })
+		.from(queueSessions)
+		.where(and(
+			eq(queueSessions.id, tickets.queueSessionId),
+			inArray(queueSessions.state, ['open', 'paused'])
+		)));
 	const update = db.update(tickets)
 		.set({ status: 'cancelled', cancelledAt: now, updatedAt: now })
-		.where(and(eq(tickets.id, credential.ticketId), eq(tickets.status, 'waiting'), eligibleCredential));
+		.where(and(eq(tickets.id, credential.ticketId), eq(tickets.status, 'waiting'), eligibleCredential, sessionCanAcceptTransitions));
 	const event = db.insert(ticketEvents).select(db.select({
 		id: sql<string>`${crypto.randomUUID()}`.as('id'),
 		ticketId: tickets.id,

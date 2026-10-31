@@ -128,6 +128,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		})),
 		opened: url.searchParams.get('opened') === '1',
 		sessionUpdated: url.searchParams.get('sessionUpdated'),
-		sessionUnchanged: url.searchParams.get('sessionUnchanged') === '1'
+		sessionUnchanged: url.searchParams.get('sessionUnchanged') === '1',
+		sessionCloseBlocked: url.searchParams.get('sessionCloseBlocked') === '1'
 	};
 };

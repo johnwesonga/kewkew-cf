@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canOpenQueueSession, resolveSessionTransition, validateQueueConfiguration } from './queue-rules';
+import { canCloseQueueSession, canOpenQueueSession, resolveSessionTransition, validateQueueConfiguration } from './queue-rules';
 
 describe('validateQueueConfiguration', () => {
 	it('trims and accepts a valid anonymous queue with unlimited capacity', () => {
@@ -65,5 +65,23 @@ describe('resolveSessionTransition', () => {
 
 	it.each(['pause', 'resume', 'close'] as const)('rejects %s after a session is closed', (command) => {
 		expect(resolveSessionTransition('closed', command)).toBeNull();
+	});
+});
+
+describe('canCloseQueueSession', () => {
+	it.each(['waiting', 'called', 'serving'] as const)('blocks closure when a %s ticket remains', (status) => {
+		expect(canCloseQueueSession([status])).toBe(false);
+	});
+
+	it('allows closure when no tickets remain', () => {
+		expect(canCloseQueueSession([])).toBe(true);
+	});
+
+	it('allows closure when only terminal tickets remain', () => {
+		expect(canCloseQueueSession(['completed', 'cancelled', 'no_show'])).toBe(true);
+	});
+
+	it('blocks closure when active and terminal tickets are mixed', () => {
+		expect(canCloseQueueSession(['completed', 'waiting', 'no_show'])).toBe(false);
 	});
 });

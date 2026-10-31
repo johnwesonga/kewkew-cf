@@ -166,6 +166,7 @@
 				{#if data.sessionUpdated === "paused"}<p class="staff-feedback success-message" role="status">Session paused. Visitors can no longer join this session.</p>{/if}
 				{#if data.sessionUpdated === "open"}<p class="staff-feedback success-message" role="status">Session resumed. Visitors can join again.</p>{/if}
 				{#if data.sessionUpdated === "closed"}<p class="staff-feedback success-message" role="status">Session closed. Its history is preserved; a new session can now be opened.</p>{/if}
+				{#if data.sessionCloseBlocked}<p class="staff-feedback error-message" role="alert">Resolve all waiting, called, and serving tickets before closing this session.</p>{/if}
 				{#if data.sessionUnchanged}<p class="staff-feedback success-message" role="status">The session was already in that state; no duplicate transition was recorded.</p>{/if}
 				{#if form?.message}<p
 						class="staff-feedback error-message"

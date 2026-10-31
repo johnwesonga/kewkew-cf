@@ -118,6 +118,7 @@
 					>
 						Session closed. Its history is preserved.
 					</p>{/if}
+				{#if data.sessionCloseBlocked}<p class="staff-feedback error-message" role="alert">Resolve all waiting, called, and serving tickets before closing this session.</p>{/if}
 				{#if data.sessionUnchanged}<p
 						class="staff-feedback success-message"
 						role="status"

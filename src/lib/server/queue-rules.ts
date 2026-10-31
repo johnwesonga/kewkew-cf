@@ -38,6 +38,13 @@ export function validateQueueConfiguration(input: {
 
 export type QueueSessionState = 'open' | 'paused' | 'closed';
 export type QueueSessionCommand = 'pause' | 'resume' | 'close';
+export type QueueTicketStatus = 'waiting' | 'called' | 'serving' | 'completed' | 'cancelled' | 'no_show';
+
+const activeQueueTicketStatuses = new Set<QueueTicketStatus>(['waiting', 'called', 'serving']);
+
+export function canCloseQueueSession(ticketStatuses: readonly QueueTicketStatus[]): boolean {
+	return !ticketStatuses.some((status) => activeQueueTicketStatuses.has(status));
+}
 
 export function resolveSessionTransition(
 	currentState: QueueSessionState,

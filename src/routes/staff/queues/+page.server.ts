@@ -1,10 +1,10 @@
 import { env as cloudflareEnv } from 'cloudflare:workers';
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { and, asc, count, eq, exists, not, or, sql } from 'drizzle-orm';
+import { and, asc, count, eq, exists, inArray, not, or, sql } from 'drizzle-orm';
 import { createDatabase } from '#lib/server/database';
 import { filterStaffQueues } from '#lib/server/staff-access';
-import { canOpenQueueSession, resolveSessionTransition, validateQueueConfiguration } from '#lib/server/queue-rules';
+import { canCloseQueueSession, canOpenQueueSession, resolveSessionTransition, validateQueueConfiguration } from '#lib/server/queue-rules';
 import {
 	locations,
 	membershipLocationAccess,
@@ -13,7 +13,8 @@ import {
 	queueSessionEvents,
 	queueSessions,
 	queues,
-	services
+	services,
+	tickets
 } from '#lib/server/schema';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
@@ -155,7 +156,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		updated: url.searchParams.get('updated') === '1',
 		opened: url.searchParams.get('opened') === '1',
 		sessionUpdated: url.searchParams.get('sessionUpdated'),
-		sessionUnchanged: url.searchParams.get('sessionUnchanged') === '1'
+		sessionUnchanged: url.searchParams.get('sessionUnchanged') === '1',
+		sessionCloseBlocked: url.searchParams.get('sessionCloseBlocked') === '1'
 	};
 };
 
@@ -238,6 +240,10 @@ export const actions: Actions = {
 				eq(queueSessions.organizationId, organizationId),
 				eq(queueSessions.state, session.state),
 				not(exists(db.select({ id: queueSessionEvents.id }).from(queueSessionEvents).where(eq(queueSessionEvents.requestId, requestId)))),
+				...(nextState === 'closed' ? [not(exists(db.select({ id: tickets.id }).from(tickets).where(and(
+					eq(tickets.queueSessionId, sessionId),
+					inArray(tickets.status, ['waiting', 'called', 'serving'])
+				))))] : []),
 				access
 			));
 		const event = db.insert(queueSessionEvents).select(db.select({
@@ -258,6 +264,15 @@ export const actions: Actions = {
 		))).onConflictDoNothing();
 		const result = await db.batch([update, event]);
 		if (result[0]?.meta.changes !== 1) {
+			if (nextState === 'closed') {
+				const activeTickets = await db.select({ status: tickets.status }).from(tickets).where(and(
+					eq(tickets.queueSessionId, sessionId),
+					inArray(tickets.status, ['waiting', 'called', 'serving'])
+				));
+				if (!canCloseQueueSession(activeTickets.map(({ status }) => status))) {
+					redirect(303, returnTo('sessionCloseBlocked=1'));
+				}
+			}
 			const current = await db.select({ state: queueSessions.state }).from(queueSessions).where(and(
 				eq(queueSessions.id, sessionId),
 				eq(queueSessions.organizationId, organizationId)

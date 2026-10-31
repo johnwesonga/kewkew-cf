@@ -122,7 +122,7 @@ Each story is marked **Planned** until implemented. The AQ identifiers follow th
 
 ## AQ-7: Pause and resume a session
 
-**Status** — In progress
+**Status** — Complete
 
 **User story** — As an authorized operator or administrator, I want to pause and resume a session so I can temporarily stop visitor signups while continuing to manage the current line.
 
@@ -134,11 +134,11 @@ Each story is marked **Planned** until implemented. The AQ identifiers follow th
 - Repeated requests that would leave the state unchanged are handled safely and do not create duplicate transition history.
 - A closed session cannot be paused or resumed.
 
-**Implementation note** — Administrators and operators assigned to the queue's location can pause and resume sessions from the queue list. Each actual state change and actor is recorded atomically; duplicate or stale requests do not create transition events. The public queue page only treats `open` sessions as available. Ticket records and staff ticket operations are not implemented yet, so this lifecycle change leaves existing ticket data untouched and later ticket actions must remain available while a session is paused.
+**Implementation note** — Administrators and operators assigned to the queue's location can pause and resume sessions from the queue list. Conditional D1 transitions record the actor and state change atomically; duplicate or stale requests do not create duplicate transition events. The public queue page only treats `open` sessions as available. Pausing preserves tickets and their state, and staff can continue permitted ticket operations on a paused session.
 
 ## AQ-8: Close a session
 
-**Status** — In progress
+**Status** — Complete
 
 **User story** — As an authorized operator or administrator, I want to close a completed session so its final state is preserved and a later operating period can start cleanly.
 
@@ -151,7 +151,7 @@ Each story is marked **Planned** until implemented. The AQ identifiers follow th
 - A later session is opened explicitly by an authorized user (or through the separate recurring schedule flow) and begins its ticket sequence at 1.
 - Conditional state changes prevent a close request racing with a ticket transition from closing a session with active tickets.
 
-**Implementation note** — Administrators and assigned operators can close an open or paused session. The conditional state update records a close event and timestamp, releases the queue for a later session, and prevents further session lifecycle transitions. Ticket tables and ticket operations do not exist yet, so the active-ticket guard, ticket transition race protection, and private tracking history must be integrated when visitor and staff ticket flows are implemented.
+**Implementation note** — Administrators and assigned operators can close open or paused sessions. The conditional D1 update refuses closure while any ticket is `waiting`, `called`, or `serving`, and records the close event and timestamp atomically when eligible. The active-ticket predicate shares the transaction boundary with staff and visitor ticket transitions, so competing operations either complete before the close check or observe the closed session and fail. A blocked close reports that active tickets must be resolved. Closed sessions retain ticket history and private tracking state, reject further normal ticket transitions, and release the queue for a later session with its own sequence starting at 1.
 
 ## AQ-9: Delete a queue with no session history
 
