@@ -204,6 +204,22 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 **Dependencies** — SF-1; OLA-2 through OLA-6; AQ-1 through AQ-4; staff workspace navigation.
 
+### SF-11: View statistics for a queue
+
+**Status** — Planned
+
+**User story** — As an administrator or queue operator, I want to see a graph of statistics for a queue so that I can understand its activity and service performance over time.
+
+**Acceptance criteria**
+
+- An authorized staff member can open statistics for a queue they are permitted to access; all data is scoped to that queue, organization, and assigned location.
+- The graph shows queue activity over a selectable time range, including visitors served and average wait time, with the time range and metric labels clearly identified.
+- Statistics use persisted queue and ticket history, and define how cancelled and no-show tickets are treated in each metric.
+- The view displays a useful empty state when the queue has no data for the selected range and an error state if statistics cannot be loaded.
+- Changing the selected queue or time range refreshes the graph without exposing data from unauthorized queues.
+
+**Dependencies** — SF-1; persisted queue-session and ticket transition history; queue-scoped statistics queries.s
+
 ## Initial transition policy
 
 | Current state | Staff action | Result |
