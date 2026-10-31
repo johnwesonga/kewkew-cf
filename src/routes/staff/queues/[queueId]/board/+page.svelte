@@ -101,6 +101,7 @@
 						</p>
 					</div>
 					<div class="queue-board-controls">
+						<a class="queue-edit-link" href={`/staff/queues/${encodeURIComponent(data.queue.id)}/statistics${organizationQuery}`}>Statistics</a>
 						<span
 							class="queue-board-session"
 							class:paused={data.sessionState === "paused"}

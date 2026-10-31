@@ -206,7 +206,9 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 ### SF-11: View statistics for a queue
 
-**Status** — Planned
+**Status** — Complete
+
+**Implementation note** — Authorized staff can open `/staff/queues/[queueId]/statistics` from the live queue list or board. The server enforces active organization membership and the operator's location assignment before querying data. The page supports 7, 30, and 90 local calendar day ranges, groups completion activity by the location timezone, counts completed tickets as served, and computes average wait from signup to each completed ticket's first call. Cancelled and no-show tickets are excluded. The chart includes an empty state, query error state, responsive scrolling, and a daily data table.
 
 **User story** — As an administrator or queue operator, I want to see a graph of statistics for a queue so that I can understand its activity and service performance over time.
 
@@ -214,11 +216,12 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 - An authorized staff member can open statistics for a queue they are permitted to access; all data is scoped to that queue, organization, and assigned location.
 - The graph shows queue activity over a selectable time range, including visitors served and average wait time, with the time range and metric labels clearly identified.
-- Statistics use persisted queue and ticket history, and define how cancelled and no-show tickets are treated in each metric.
+- Statistics use persisted queue and ticket history. “Visitors served” counts tickets completed in the selected range. “Average wait” is the elapsed time from ticket signup to its first call, averaged across those completed tickets with a recorded call event. Cancelled and no-show tickets are excluded from both metrics.
+- Daily graph buckets and labels use the queue location's timezone.
 - The view displays a useful empty state when the queue has no data for the selected range and an error state if statistics cannot be loaded.
 - Changing the selected queue or time range refreshes the graph without exposing data from unauthorized queues.
 
-**Dependencies** — SF-1; persisted queue-session and ticket transition history; queue-scoped statistics queries.s
+**Dependencies** — SF-1; persisted queue-session and ticket transition history; queue-scoped statistics queries.
 
 ## Initial transition policy
 

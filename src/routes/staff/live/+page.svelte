@@ -186,6 +186,7 @@
 														href={`/staff/queues/${encodeURIComponent(queue.id)}/board${organizationQuery}`}
 														>Open live board</a
 													>
+								<a class="queue-edit-link" href={`/staff/queues/${encodeURIComponent(queue.id)}/statistics${organizationQuery}`}>Statistics</a>
 													{#if queue.sessionId && queue.transitionRequestId && (queue.sessionState === "open" || queue.sessionState === "paused")}
 														<form
 															method="POST"
