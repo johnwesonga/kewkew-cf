@@ -55,7 +55,7 @@
 <svelte:head>
 	<title>Ticket {data.ticket.number} · Kewkew</title>
 	<meta name="robots" content="noindex, nofollow" />
-	<meta name="referrer" content="no-referrer" />
+	<meta name="referrer" content="same-origin" />
 </svelte:head>
 
 <main class="public-queue-page">
@@ -92,7 +92,8 @@
 			<div>
 				<strong>{presentation.label}</strong>
 				<p>{presentation.message}</p>
-				{#if presentation.showPosition && data.ticket.position !== null}<p>
+				{#if presentation.showPosition && data.ticket.position !== null}<p
+					>
 						Position in line: {data.ticket.position}
 					</p>{/if}
 			</div>

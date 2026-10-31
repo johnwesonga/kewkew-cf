@@ -9,7 +9,7 @@ import { digestCredential, isValidCredential } from '#lib/server/visitor-credent
 import { organizations, tickets } from '#lib/server/schema';
 
 export const load: PageServerLoad = async ({ params, setHeaders }) => {
-	setHeaders({ 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' });
+	setHeaders({ 'cache-control': 'no-store', 'referrer-policy': 'same-origin' });
 	if (!isValidCredential(params.token)) redirect(303, '/t/unavailable');
 	const db = createDatabase((cloudflareEnv as Env).DB);
 	const ticket = await getTicketByTrackingCredential(db, await digestCredential(params.token));
