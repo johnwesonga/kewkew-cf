@@ -2,17 +2,10 @@
 	import { invalidateAll } from "$app/navigation";
 	import { onMount } from "svelte";
 	import StaffSidebar from "#lib/StaffSidebar.svelte";
+	import StaffAccountChip from "#lib/StaffAccountChip.svelte";
 	import type { PageProps } from "./$types";
 
 	let { data, form }: PageProps = $props();
-	let initials = $derived(
-		data.user.name
-			.trim()
-			.split(/\s+/)
-			.slice(0, 2)
-			.map((part) => part[0]?.toUpperCase() ?? "")
-			.join(""),
-	);
 	let organizationQuery = $derived(
 		`?organization=${encodeURIComponent(data.organization.organizationId)}`,
 	);
@@ -64,14 +57,7 @@
 					>{data.organization.organizationName}</span
 				>
 			{/if}
-			<div class="staff-account-chip">
-				<span class="staff-avatar" aria-hidden="true">{initials}</span>
-				<span class="staff-account-copy"
-					><strong>{data.user.name}</strong><small
-						>{data.user.email}</small
-					></span
-				>
-			</div>
+			<StaffAccountChip name={data.user.name} email={data.user.email} />
 			<form method="POST" action="/staff?/signOut">
 				<button class="staff-signout" type="submit">Sign out</button>
 			</form>

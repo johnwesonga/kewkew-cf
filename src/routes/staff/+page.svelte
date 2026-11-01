@@ -1,17 +1,11 @@
 <script lang="ts">
 	import { supportedTimezones } from "#lib/timezones";
 	import StaffSidebar from "#lib/StaffSidebar.svelte";
+	import StaffAccountChip from "#lib/StaffAccountChip.svelte";
+	import StaffAvatar from "#lib/StaffAvatar.svelte";
 	import type { PageProps } from "./$types";
 
 	let { data, form }: PageProps = $props();
-	let initials = $derived(
-		data.user.name
-			.trim()
-			.split(/\s+/)
-			.slice(0, 2)
-			.map((part) => part[0]?.toUpperCase() ?? "")
-			.join(""),
-	);
 	let firstName = $derived(data.user.name.trim().split(/\s+/)[0] ?? "there");
 </script>
 
@@ -57,14 +51,7 @@
 					>{data.organization.organizationName}</span
 				>
 			{/if}
-			<div class="staff-account-chip">
-				<span class="staff-avatar" aria-hidden="true">{initials}</span>
-				<span class="staff-account-copy"
-					><strong>{data.user.name}</strong><small
-						>{data.user.email}</small
-					></span
-				>
-			</div>
+			<StaffAccountChip name={data.user.name} email={data.user.email} />
 			<form method="POST" action="?/signOut">
 				<button class="staff-signout" type="submit">Sign out</button>
 			</form>
@@ -561,9 +548,7 @@
 							>
 						</div>
 						<div class="staff-account-details">
-							<span class="staff-avatar large" aria-hidden="true"
-								>{initials}</span
-							>
+							<StaffAvatar name={data.user.name} size="large" />
 							<div>
 								<strong>{data.user.name}</strong><span
 									>{data.user.email}</span
