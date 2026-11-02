@@ -2776,6 +2776,138 @@ select {
 	color: var(--green-dark);
 }
 
+:root[data-color-scheme='dark'] .home-landing {
+	background: #141d18;
+	color: var(--ink);
+}
+
+:root[data-color-scheme='dark'] .home-nav,
+:root[data-color-scheme='dark'] .home-footer {
+	border-color: var(--line);
+}
+
+:root[data-color-scheme='dark'] .home-nav .brand-name small,
+:root[data-color-scheme='dark'] .home-footer .brand-name small,
+:root[data-color-scheme='dark'] .home-nav nav a,
+:root[data-color-scheme='dark'] .home-footer > a:not(.brand),
+:root[data-color-scheme='dark'] .home-hero-intro,
+:root[data-color-scheme='dark'] .home-reassurance,
+:root[data-color-scheme='dark'] .home-text-link,
+:root[data-color-scheme='dark'] .home-preview-caption,
+:root[data-color-scheme='dark'] .home-proof-strip small,
+:root[data-color-scheme='dark'] .home-section-heading > p:last-child,
+:root[data-color-scheme='dark'] .home-steps p,
+:root[data-color-scheme='dark'] .home-feature-copy > p:not(.home-eyebrow),
+:root[data-color-scheme='dark'] .home-feature-list p,
+:root[data-color-scheme='dark'] .home-cta p:last-child,
+:root[data-color-scheme='dark'] .home-footer > span {
+	color: var(--muted);
+}
+
+:root[data-color-scheme='dark'] .home-nav nav a:hover,
+:root[data-color-scheme='dark'] .home-footer > a:hover,
+:root[data-color-scheme='dark'] .home-text-link:hover {
+	color: var(--green);
+}
+
+:root[data-color-scheme='dark'] .home-hero h1,
+:root[data-color-scheme='dark'] .home-section-heading h2,
+:root[data-color-scheme='dark'] .home-feature-copy h2,
+:root[data-color-scheme='dark'] .home-cta h2,
+:root[data-color-scheme='dark'] .home-proof-strip strong,
+:root[data-color-scheme='dark'] .home-steps h3,
+:root[data-color-scheme='dark'] .home-feature-list h3 {
+	color: var(--ink);
+}
+
+:root[data-color-scheme='dark'] .home-preview-wrap::before {
+	background: #1e3025;
+}
+
+:root[data-color-scheme='dark'] .home-orbit {
+	border-color: rgba(156, 219, 184, .14);
+}
+
+:root[data-color-scheme='dark'] .home-preview-card,
+:root[data-color-scheme='dark'] .home-float-card {
+	border-color: var(--line);
+	background: #1d2922;
+	box-shadow: 0 28px 80px rgba(0, 0, 0, .32);
+}
+
+:root[data-color-scheme='dark'] .home-preview-top,
+:root[data-color-scheme='dark'] .home-preview-foot {
+	border-color: var(--line);
+}
+
+:root[data-color-scheme='dark'] .home-preview-logo,
+:root[data-color-scheme='dark'] .home-preview-business strong,
+:root[data-color-scheme='dark'] .home-ticket-panel > div strong,
+:root[data-color-scheme='dark'] .home-position-copy strong,
+:root[data-color-scheme='dark'] .home-float-card strong {
+	color: var(--ink);
+}
+
+:root[data-color-scheme='dark'] .home-preview-secure,
+:root[data-color-scheme='dark'] .home-preview-business small,
+:root[data-color-scheme='dark'] .home-ticket-panel > div span,
+:root[data-color-scheme='dark'] .home-position-copy span,
+:root[data-color-scheme='dark'] .home-preview-foot,
+:root[data-color-scheme='dark'] .home-float-card small {
+	color: var(--muted);
+}
+
+:root[data-color-scheme='dark'] .home-preview-icon,
+:root[data-color-scheme='dark'] .home-proof-icon,
+:root[data-color-scheme='dark'] .home-step-icon,
+:root[data-color-scheme='dark'] .home-feature-list article > span {
+	background: #263e31;
+	color: #9cdbb8;
+}
+
+:root[data-color-scheme='dark'] .home-ticket-panel,
+:root[data-color-scheme='dark'] .home-steps article,
+:root[data-color-scheme='dark'] .home-feature-list article {
+	border-color: var(--line);
+	background: #1a261f;
+}
+
+:root[data-color-scheme='dark'] .home-ticket-panel {
+	background: #18231c;
+}
+
+:root[data-color-scheme='dark'] .home-waiting-pill {
+	background: #423720;
+	color: #e6c77c;
+}
+
+:root[data-color-scheme='dark'] .home-progress {
+	background: #2b3930;
+}
+
+:root[data-color-scheme='dark'] .home-proof-strip,
+:root[data-color-scheme='dark'] .home-how {
+	border-color: var(--line);
+}
+
+:root[data-color-scheme='dark'] .home-step-number {
+	color: #718078;
+}
+
+:root[data-color-scheme='dark'] .home-features {
+	background: #18231c;
+}
+
+:root[data-color-scheme='dark'] .home-feature-list article {
+	border-color: #34433a;
+	background: rgba(29, 41, 34, .78);
+}
+
+:root[data-color-scheme='dark'] .home-reassurance span,
+:root[data-color-scheme='dark'] .home-text-link span {
+	color: var(--green);
+}
+
 @media (max-width: 650px) {
 	.theme-switcher {
 		right: 12px;
