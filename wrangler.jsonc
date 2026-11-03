@@ -1,7 +1,8 @@
 {
 	"$schema": "./node_modules/wrangler/config-schema.json",
 	"name": "kewkew-cf",
-	"main": ".svelte-kit/cloudflare/_worker.js",
+	"main": "src/worker-entry.ts",
+	"triggers": { "crons": ["* * * * *"] },
 	"compatibility_date": "2026-10-26",
 	"compatibility_flags": [
 		"nodejs_als"

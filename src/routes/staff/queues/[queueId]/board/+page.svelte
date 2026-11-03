@@ -122,6 +122,7 @@
 								>
 							</form>
 						{/if}
+						{#if data.scheduledServiceStartAt}<p class="staff-page-subhead">Scheduled service starts {new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short', timeZone: data.queue.timezone }).format(new Date(data.scheduledServiceStartAt))} ({data.queue.timezone}).</p>{/if}
 						<button
 							class="queue-edit-link"
 							type="button"

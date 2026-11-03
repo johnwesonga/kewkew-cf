@@ -153,6 +153,7 @@
 				{#if data.sessionUpdated === "open"}<p class="staff-feedback success-message" role="status">Session resumed. Visitors can join again.</p>{/if}
 				{#if data.sessionUpdated === "closed"}<p class="staff-feedback success-message" role="status">Session closed. Its history is preserved; a new session can now be opened.</p>{/if}
 				{#if data.sessionCloseBlocked}<p class="staff-feedback error-message" role="alert">Resolve all waiting, called, and serving tickets before closing this session.</p>{/if}
+				{#each data.blockedOccurrences as occurrence}<p class="staff-feedback error-message" role="alert">Scheduled occurrence for {occurrence.queueName} on {occurrence.occurrenceDate} was blocked because a prior session was still open. Close or resolve that session, then review the next scheduled occurrence.</p>{/each}
 				{#if data.sessionUnchanged}<p class="staff-feedback success-message" role="status">The session was already in that state; no duplicate transition was recorded.</p>{/if}
 				{#if form?.message}<p
 						class="staff-feedback error-message"
@@ -398,16 +399,19 @@
 															<button class="queue-edit-link" type="submit" name="transition" value="close">Close session</button>
 														</form>
 													{/if}
-													{#if queue.sessionState === null && queue.isActive === 1 && queue.locationIsActive === 1 && queue.serviceIsActive === 1}
+								{#if queue.sessionState === null && queue.scheduleEnabled !== 1 && queue.isActive === 1 && queue.locationIsActive === 1 && queue.serviceIsActive === 1}
 														<form method="POST" action={`?/openSession&organization=${encodeURIComponent(data.organization.organizationId)}`}>
 															<input type="hidden" name="queueId" value={queue.id} />
 															<input type="hidden" name="openRequestId" value={queue.openRequestId} />
 															<button class="queue-edit-link" type="submit">Open session</button>
 														</form>
-													{:else if queue.sessionState === null}
+								{:else if queue.sessionState === null && queue.scheduleEnabled === 1}
+									<span class="queue-label-hint">A recurring schedule opens sessions automatically.</span>
+								{:else if queue.sessionState === null}
 														<span class="queue-label-hint">Activate queue, location, and service to open a session.</span>
 													{/if}
 													{#if data.organization.role === "admin"}
+									<a class="queue-edit-link" href={`/staff/queues/${encodeURIComponent(queue.id)}/schedule?organization=${encodeURIComponent(data.organization.organizationId)}`}>Schedule</a>
 														<form method="POST" action={`?/setQueueActive&organization=${encodeURIComponent(data.organization.organizationId)}`}>
 															<input type="hidden" name="queueId" value={queue.id} />
 															<input type="hidden" name="active" value={queue.isActive === 1 ? '0' : '1'} />

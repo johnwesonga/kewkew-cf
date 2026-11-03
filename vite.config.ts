@@ -5,7 +5,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
 	plugins: [
 		sveltekit({
-			adapter: adapter(),
+			adapter: adapter({ config: './wrangler.adapter.jsonc' }),
 			csrf: {
 				// Trust the preview custom domain if the Worker derives a different
 				// request origin behind Cloudflare's custom-domain routing.

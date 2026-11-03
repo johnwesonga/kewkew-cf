@@ -11,6 +11,7 @@ import {
 	organizationMemberships,
 	organizations,
 	queueSessionEvents,
+	queueSchedules,
 	queueSessions,
 	queues,
 	services,
@@ -88,6 +89,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			identityPolicy: queues.identityPolicy,
 			isActive: queues.isActive,
 			activeTicketCapacity: queues.activeTicketCapacity,
+			scheduleEnabled: sql<number>`COALESCE((SELECT enabled FROM queue_schedules WHERE queue_id = ${queues.id}), 0)`,
 			sessionId: queueSessions.id,
 			sessionState: queueSessions.state
 		})
@@ -138,6 +140,10 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			.where(eq(services.organizationId, organization.organizationId))
 			.orderBy(asc(sql`lower(${services.name})`), asc(services.id))
 		: [];
+	const blockedOccurrences = await db.select({ queueId: queueSessions.queueId, queueName: queues.name, occurrenceDate: queueSessions.occurrenceKey })
+		.from(queueSessions).innerJoin(queues, and(eq(queues.id, queueSessions.queueId), eq(queues.organizationId, queueSessions.organizationId)))
+		.where(and(eq(queueSessions.organizationId, organization.organizationId), eq(queueSessions.occurrenceStatus, 'blocked')))
+		.orderBy(asc(queueSessions.occurrenceKey)).limit(20);
 
 	return {
 		user: { name: locals.user.name, email: locals.user.email },
@@ -151,6 +157,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		})),
 		queueLocations,
 		queueServices,
+		blockedOccurrences,
 		createRequestId: organization.role === 'admin' ? crypto.randomUUID() : null,
 		created: url.searchParams.get('created') === '1',
 		updated: url.searchParams.get('updated') === '1',
@@ -323,7 +330,8 @@ export const actions: Actions = {
 		const eligibleQueue = await db.select({
 			queueActive: queues.isActive,
 			locationActive: locations.isActive,
-			serviceActive: services.isActive
+			serviceActive: services.isActive,
+			scheduleEnabled: sql<number>`COALESCE((SELECT enabled FROM queue_schedules WHERE queue_id = ${queues.id}), 0)`
 		})
 			.from(queues)
 			.innerJoin(locations, and(
@@ -342,6 +350,7 @@ export const actions: Actions = {
 			))
 			.get();
 		if (!eligibleQueue) error(404, 'Queue not found');
+		if (eligibleQueue.scheduleEnabled === 1) return invalid('Disable the recurring schedule before opening a manual session.');
 		if (!canOpenQueueSession(eligibleQueue.queueActive, eligibleQueue.locationActive, eligibleQueue.serviceActive)) {
 			return invalid('Activate the queue, location, and service before opening a session.');
 		}
@@ -385,6 +394,11 @@ export const actions: Actions = {
 					eq(locations.isActive, 1),
 					eq(services.isActive, 1),
 					access,
+					not(exists(db.select({ id: queueSchedules.id }).from(queueSchedules).where(and(
+						eq(queueSchedules.organizationId, queues.organizationId),
+						eq(queueSchedules.queueId, queues.id),
+						eq(queueSchedules.enabled, 1)
+					)))),
 					not(exists(currentSession))
 				))
 		).onConflictDoNothing().run();

@@ -75,6 +75,11 @@ describe('canCallNext', () => {
 	it('disables calling when no ticket is waiting', () => {
 		expect(canCallNext('open', [{ status: 'called' }])).toBe(false);
 	});
+
+	it('keeps scheduled occurrences waiting until service start', () => {
+		expect(canCallNext('open', [{ status: 'waiting' }], '2026-01-05T18:00:00.000Z', Date.parse('2026-01-05T17:59:59.999Z'))).toBe(false);
+		expect(canCallNext('open', [{ status: 'waiting' }], '2026-01-05T18:00:00.000Z', Date.parse('2026-01-05T18:00:00.000Z'))).toBe(true);
+	});
 });
 
 describe('canStartServing', () => {

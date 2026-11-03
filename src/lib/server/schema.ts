@@ -54,6 +54,19 @@ export const queues = sqliteTable('queues', {
 	uniqueIndex('queues_public_id_unique').on(table.publicId)
 ]);
 
+export const queueSchedules = sqliteTable('queue_schedules', {
+	id: text('id').primaryKey(),
+	organizationId: text('organization_id').notNull(),
+	queueId: text('queue_id').notNull(),
+	enabled: integer('enabled').notNull(),
+	weekdays: text('weekdays').notNull(),
+	signupOpenTime: text('signup_open_time').notNull(),
+	serviceStartTime: text('service_start_time').notNull(),
+	occurrenceTicketCap: integer('occurrence_ticket_cap'),
+	version: integer('version').notNull(),
+	updatedAt: text('updated_at').notNull()
+});
+
 export const queueSessions = sqliteTable('queue_sessions', {
 	id: text('id').primaryKey(),
 	organizationId: text('organization_id').notNull(),
@@ -65,7 +78,14 @@ export const queueSessions = sqliteTable('queue_sessions', {
 	transitionRequestId: text('transition_request_id'),
 	nextTicketNumber: integer('next_ticket_number').notNull().default(1),
 	nextQueueSequence: integer('next_queue_sequence').notNull().default(1),
-	lastJoinAttemptDigest: text('last_join_attempt_digest')
+	lastJoinAttemptDigest: text('last_join_attempt_digest'),
+	scheduleId: text('schedule_id'),
+	scheduleVersion: integer('schedule_version'),
+	occurrenceKey: text('occurrence_key'),
+	signupOpensAt: text('signup_opens_at'),
+	scheduledServiceStartAt: text('scheduled_service_start_at'),
+	occurrenceTicketCap: integer('occurrence_ticket_cap'),
+	occurrenceStatus: text('occurrence_status', { enum: ['active', 'blocked'] }).notNull().default('active')
 }, (table) => [
 	uniqueIndex('queue_sessions_one_current_per_queue')
 		.on(table.queueId)

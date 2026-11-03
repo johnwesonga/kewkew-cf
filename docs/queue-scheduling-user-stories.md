@@ -21,7 +21,7 @@ Related stories: [admin queue configuration](admin-queue-configuration-user-stor
 
 ## AQ-9: Schedule recurring queue signup and service start
 
-**Status** — Planned
+**Status** — Implemented in the Cloudflare rebuild
 
 **User story** — As an organization administrator, I want to schedule recurring signup and service times for a queue so visitors can claim tickets before service begins and staff know when to start calling them.
 
@@ -96,6 +96,10 @@ Related stories: [admin queue configuration](admin-queue-configuration-user-stor
 - The business must decide how staff close an occurrence with unserved visitors before production scheduling is enabled; current queue-session close rules require active tickets to be resolved first.
 
 ## Cloudflare implementation shape
+
+**AQ-9 implementation note** — Recurring schedules are configured by organization administrators from each queue's Schedule page. The Worker cron runs once per minute and reconciles enabled schedules by location-local date; queue sessions store the schedule version, local occurrence key, persisted UTC signup opening and service start, and the lifetime ticket cap. Reconciliation uses a unique `(schedule_id, occurrence_key)` index and inserts a closed `blocked` occurrence when an existing session prevents opening. The staff queue list surfaces these blocked dates. Ticket allocation conditionally checks both current active-ticket capacity and total issued tickets for that session in the same D1 batch that allocates the session's ticket counters. Staff call-next writes check the stored scheduled service-start timestamp; manual sessions remain unaffected.
+
+For daylight-saving resolution, repeated local times select the earlier UTC instant. Nonexistent local times move forward to the first valid local minute after the gap. This policy is applied when resolving an occurrence and the resolved UTC timestamps are persisted on its session.
 
 ### Data model
 

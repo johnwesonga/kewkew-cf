@@ -138,6 +138,8 @@ export async function joinVisitorQueue(
 	const now = new Date().toISOString();
 	const updateConditions = [
 		eq(queueSessions.state, 'open'),
+		or(isNull(queueSessions.signupOpensAt), sql`${queueSessions.signupOpensAt} <= ${now}`)!,
+		sql`(${queueSessions.occurrenceTicketCap} IS NULL OR (SELECT count(*) FROM tickets issued WHERE issued.queue_session_id = ${queueSessions.id}) < ${queueSessions.occurrenceTicketCap})`,
 		eligibleQueue,
 		not(priorAttempt),
 		not(priorTrackingCredential)
@@ -241,7 +243,8 @@ export async function joinVisitorQueue(
 	if (!state) return 'unavailable';
 	if (state.identityPolicy === 'name_required' && (!firstName || !lastName)) return 'name_required';
 	if (state.queueActive !== 1 || state.locationActive !== 1 || state.serviceActive !== 1 || state.sessionState !== 'open') return 'unavailable';
-	if (state.activeTicketCapacity !== null && state.activeTicketCount >= state.activeTicketCapacity) return 'full';
+	if ((state.activeTicketCapacity !== null && state.activeTicketCount >= state.activeTicketCapacity)
+		|| (state.occurrenceTicketCap !== null && state.occurrenceTicketCount >= state.occurrenceTicketCap)) return 'full';
 	return 'failed';
 }
 
@@ -323,6 +326,8 @@ export async function getJoinState(db: ReturnType<typeof createDatabase>, public
 		serviceActive: services.isActive,
 		sessionState: queueSessions.state,
 		activeTicketCapacity: queues.activeTicketCapacity,
+		occurrenceTicketCap: queueSessions.occurrenceTicketCap,
+		occurrenceTicketCount: sql<number>`(SELECT COUNT(*) FROM tickets issued WHERE issued.queue_session_id = ${queueSessions.id})`,
 		activeTicketCount: sql<number>`(
 			SELECT COUNT(*) FROM tickets
 			WHERE tickets.queue_session_id = ${queueSessions.id}

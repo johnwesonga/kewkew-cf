@@ -33,9 +33,13 @@ export function selectNextWaitingTicket<T extends { status: StaffTicketStatus; q
 
 export function canCallNext(
 	sessionState: 'open' | 'paused' | 'closed' | null,
-	tickets: readonly { status: StaffTicketStatus }[]
+	tickets: readonly { status: StaffTicketStatus }[],
+	scheduledServiceStartAt: string | null = null,
+	now = Date.now()
 ): boolean {
-	return (sessionState === 'open' || sessionState === 'paused') && tickets.some((ticket) => ticket.status === 'waiting');
+	return (sessionState === 'open' || sessionState === 'paused')
+		&& (!scheduledServiceStartAt || Date.parse(scheduledServiceStartAt) <= now)
+		&& tickets.some((ticket) => ticket.status === 'waiting');
 }
 
 export function canStartServing(status: StaffTicketStatus): boolean {
