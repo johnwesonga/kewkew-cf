@@ -41,13 +41,27 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 	if (!admin) error(403, 'Administrator access required');
 	// These values are used by the shared workspace shell around the form.
 	const [workspace, locationCount] = await Promise.all([
-		db.select({ name: organizations.name }).from(organizations).where(eq(organizations.id, result.organizationId)).get(),
-		db.select({ value: count() }).from(locations).where(eq(locations.organizationId, result.organizationId)).get()
+		db.
+			select({ name: organizations.name })
+			.from(organizations)
+			.where(eq(organizations.id, result.organizationId))
+			.get(),
+		db
+			.select({ value: count() })
+			.from(locations)
+			.where(eq(locations.organizationId, result.organizationId))
+			.get()
 	]);
 	return {
-		...result, weekdays: result.weekdays ? JSON.parse(result.weekdays) as number[] : [], organizationId: result.organizationId,
-		organizationName: workspace?.name ?? '', locationCount: locationCount?.value ?? 0,
-		user: { name: locals.user.name, email: locals.user.email },
+		...result,
+		weekdays: result.weekdays ? JSON.parse(result.weekdays) as number[] : [],
+		organizationId: result.organizationId,
+		organizationName: workspace?.name ?? '',
+		locationCount: locationCount?.value ?? 0,
+		user: {
+			name: locals.user.name,
+			email: locals.user.email
+		},
 		saved: url.searchParams.get('saved') === '1'
 	};
 };
