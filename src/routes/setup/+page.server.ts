@@ -2,15 +2,25 @@ import { env as cloudflareEnv } from 'cloudflare:workers';
 import { constantTimeEqual, hashPassword } from 'better-auth/crypto';
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { supportedTimezones } from '#lib/timezones';
+import { and, eq, isNull, sql } from 'drizzle-orm';
+import { createDatabase } from '#lib/server/database';
+import {
+	accounts,
+	installationSetup,
+	locations,
+	membershipAuditEvents,
+	organizationMemberships,
+	organizations,
+	users
+} from '#lib/server/schema';
+import { canRunInitialSetup, validateInitialSetup } from '#lib/server/setup-validation';
 
 export const load: PageServerLoad = async () => {
-	const env = cloudflareEnv as Env;
-	const state = await env.DB.prepare(
-		' SELECT initialized_at FROM installation_setup WHERE id = 1'
-	).first<{ initialized_at: string | null }>();
+	const db = createDatabase((cloudflareEnv as Env).DB);
+	const state = await db.select({ initializedAt: installationSetup.initializedAt })
+		.from(installationSetup).where(eq(installationSetup.id, 1)).get();
 
-	if (!state || state.initialized_at) redirect(303, '/staff/sign-in');
+	if (!canRunInitialSetup(state?.initializedAt)) redirect(303, '/staff/sign-in');
 
 	return {};
 };
@@ -20,12 +30,6 @@ export const actions: Actions = {
 		const env = cloudflareEnv as Env;
 		const form = await request.formData();
 		const bootstrapSecret = String(form.get('bootstrapSecret') ?? '');
-		const organizationName = String(form.get('organizationName') ?? '').trim();
-		const locationName = String(form.get('locationName') ?? '').trim();
-		const timezone = String(form.get('timezone') ?? '').trim();
-		const adminName = String(form.get('adminName') ?? '').trim();
-		const email = String(form.get('email') ?? '').trim().toLowerCase();
-		const password = String(form.get('password') ?? '');
 
 		if (!env.KEWKEW_BOOTSTRAP_SECRET) {
 			return fail(503, { message: 'Trusted setup is not configured.' });
@@ -35,19 +39,16 @@ export const actions: Actions = {
 			return fail(403, { message: 'The setup credential is invalid.' });
 		}
 
-		if (
-			!organizationName || organizationName.length > 160 ||
-			!locationName || locationName.length > 160 ||
-			!adminName || adminName.length > 160 ||
-			!/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(email) ||
-			password.length < 8 || password.length > 128
-		) {
-			return fail(400, { message: 'Enter valid organization, location, and administrator details.' });
-		}
-
-		if (!supportedTimezones.includes(timezone as (typeof supportedTimezones)[number])) {
-			return fail(400, { message: 'Select a supported location timezone.' });
-		}
+		const validation = validateInitialSetup({
+			organizationName: String(form.get('organizationName') ?? ''),
+			locationName: String(form.get('locationName') ?? ''),
+			timezone: String(form.get('timezone') ?? ''),
+			adminName: String(form.get('adminName') ?? ''),
+			email: String(form.get('email') ?? ''),
+			password: String(form.get('password') ?? '')
+		});
+		if (!validation.valid) return fail(400, { message: validation.message });
+		const { organizationName, locationName, timezone, adminName, email, password } = validation.value;
 
 		const userId = crypto.randomUUID();
 		const organizationId = crypto.randomUUID();
@@ -55,54 +56,67 @@ export const actions: Actions = {
 		const accountId = crypto.randomUUID();
 		const passwordHash = await hashPassword(password);
 		const now = new Date().toISOString();
-		const createOrg = env.DB.prepare(
-			`INSERT INTO organizations (id, name)
-			 SELECT ?, ? WHERE EXISTS (
-				SELECT 1 FROM installation_setup WHERE id = 1 AND initialized_at IS NULL
-			 )`
-		).bind(organizationId, organizationName);
-		const createLocation = env.DB.prepare(
-			`INSERT INTO locations (id, organization_id, name, timezone)
-			 SELECT ?, ?, ?, ? WHERE EXISTS (
-				SELECT 1 FROM installation_setup WHERE id = 1 AND initialized_at IS NULL
-			 )`
-		).bind(locationId, organizationId, locationName, timezone);
-		const createUser = env.DB.prepare(
-			`INSERT INTO users (id, name, email, email_verified, created_at, updated_at)
-			 SELECT ?, ?, ?, 0, ?, ? WHERE EXISTS (
-				SELECT 1 FROM installation_setup WHERE id = 1 AND initialized_at IS NULL
-			 )`
-		).bind(userId, adminName, email, now, now);
-		const createAccount = env.DB.prepare(
-			`INSERT INTO accounts (id, account_id, provider_id, user_id, password, created_at, updated_at)
-			 SELECT ?, ?, 'credential', ?, ?, ?, ? WHERE EXISTS (
-				SELECT 1 FROM installation_setup WHERE id = 1 AND initialized_at IS NULL
-			 )`
-		).bind(accountId, userId, userId, passwordHash, now, now);
-		const createMembership = env.DB.prepare(
-			`INSERT INTO organization_memberships (organization_id, user_id, role, status)
-			 SELECT ?, ?, 'admin', 'active' WHERE EXISTS (
-				SELECT 1 FROM installation_setup WHERE id = 1 AND initialized_at IS NULL
-			 )`
-		).bind(organizationId, userId);
-		const recordBootstrap = env.DB.prepare(
-			`INSERT INTO membership_audit_events (
-				id, organization_id, actor_user_id, subject_user_id, change_type,
-				after_role, after_status
-			)
-			 SELECT ?, ?, ?, ?, 'membership_created', 'admin', 'active'
-			 WHERE EXISTS (
-				SELECT 1 FROM installation_setup WHERE id = 1 AND initialized_at IS NULL
-			 )`
-		).bind(crypto.randomUUID(), organizationId, userId, userId);
-		const finishSetup = env.DB.prepare(
-			`UPDATE installation_setup
-			 SET initialized_at = ?, organization_id = ?
-			 WHERE id = 1 AND initialized_at IS NULL`
-		).bind(now, organizationId);
+		const db = createDatabase(env.DB);
+		const setupPending = and(eq(installationSetup.id, 1), isNull(installationSetup.initializedAt));
+
+		// Each insert selects from the singleton setup row only while setup is pending.
+		// The final marker update is in the same D1 batch, keeping bootstrap one-time.
+		const createOrg = db.insert(organizations).select(db.select({
+			id: sql<string>`${organizationId}`.as('id'),
+			name: sql<string>`${organizationName}`.as('name'),
+			updatedAt: sql<string>`${now}`.as('updated_at')
+		}).from(installationSetup).where(setupPending));
+		const createLocation = db.insert(locations).select(db.select({
+			id: sql<string>`${locationId}`.as('id'),
+			organizationId: sql<string>`${organizationId}`.as('organization_id'),
+			name: sql<string>`${locationName}`.as('name'),
+			timezone: sql<string>`${timezone}`.as('timezone'),
+			isActive: sql<number>`1`.as('is_active'),
+			updatedAt: sql<string>`${now}`.as('updated_at')
+		}).from(installationSetup).where(setupPending));
+		const createUser = db.insert(users).select(db.select({
+			id: sql<string>`${userId}`.as('id'),
+			name: sql<string>`${adminName}`.as('name'),
+			email: sql<string>`${email}`.as('email'),
+			emailVerified: sql<number>`0`.as('email_verified'),
+			createdAt: sql<string>`${now}`.as('created_at'),
+			updatedAt: sql<string>`${now}`.as('updated_at')
+		}).from(installationSetup).where(setupPending));
+		const createAccount = db.insert(accounts).select(db.select({
+			id: sql<string>`${accountId}`.as('id'),
+			accountId: sql<string>`${userId}`.as('account_id'),
+			providerId: sql<string>`'credential'`.as('provider_id'),
+			userId: sql<string>`${userId}`.as('user_id'),
+			password: sql<string>`${passwordHash}`.as('password'),
+			createdAt: sql<string>`${now}`.as('created_at'),
+			updatedAt: sql<string>`${now}`.as('updated_at')
+		}).from(installationSetup).where(setupPending));
+		const createMembership = db.insert(organizationMemberships).select(db.select({
+			organizationId: sql<string>`${organizationId}`.as('organization_id'),
+			userId: sql<string>`${userId}`.as('user_id'),
+			role: sql<'admin'>`'admin'`.as('role'),
+			status: sql<'active'>`'active'`.as('status'),
+			createdAt: sql<string>`${now}`.as('created_at'),
+			updatedAt: sql<string>`${now}`.as('updated_at')
+		}).from(installationSetup).where(setupPending));
+		const recordBootstrap = db.insert(membershipAuditEvents).select(db.select({
+			id: sql<string>`${crypto.randomUUID()}`.as('id'),
+			organizationId: sql<string>`${organizationId}`.as('organization_id'),
+			actorUserId: sql<string>`${userId}`.as('actor_user_id'),
+			subjectUserId: sql<string>`${userId}`.as('subject_user_id'),
+			changeType: sql<'membership_created'>`'membership_created'`.as('change_type'),
+			beforeRole: sql<null>`NULL`.as('before_role'),
+			afterRole: sql<'admin'>`'admin'`.as('after_role'),
+			beforeStatus: sql<null>`NULL`.as('before_status'),
+			afterStatus: sql<'active'>`'active'`.as('after_status'),
+			detailsJson: sql<null>`NULL`.as('details_json'),
+			createdAt: sql<string>`${now}`.as('created_at')
+		}).from(installationSetup).where(setupPending));
+		const finishSetup = db.update(installationSetup).set({ initializedAt: now, organizationId })
+			.where(setupPending);
 
 		try {
-			const results = await env.DB.batch([
+			const results = await db.batch([
 				createOrg,
 				createLocation,
 				createUser,

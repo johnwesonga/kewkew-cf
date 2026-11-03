@@ -7,6 +7,12 @@ export const organizations = sqliteTable('organizations', {
 	updatedAt: text('updated_at').notNull()
 });
 
+export const installationSetup = sqliteTable('installation_setup', {
+	id: integer('id').primaryKey(),
+	initializedAt: text('initialized_at'),
+	organizationId: text('organization_id')
+});
+
 export const organizationMemberships = sqliteTable('organization_memberships', {
 	organizationId: text('organization_id').notNull(),
 	userId: text('user_id').notNull(),
