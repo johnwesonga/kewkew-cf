@@ -11,12 +11,14 @@
 	let selectedLocationId = $state("");
 	let selectedServiceId = $state("");
 	$effect(() => {
-		const locationId =
-			form?.locationId ?? data.queueLocations[0]?.id ?? "";
+		const locationId = form?.locationId ?? data.queueLocations[0]?.id ?? "";
 		const serviceId = form?.serviceId ?? "";
-		const service = data.queueServices.find((entry) => entry.id === serviceId);
+		const service = data.queueServices.find(
+			(entry) => entry.id === serviceId,
+		);
 		selectedLocationId = locationId;
-		selectedServiceId = service && service.locationId !== locationId ? "" : serviceId;
+		selectedServiceId =
+			service && service.locationId !== locationId ? "" : serviceId;
 	});
 	function handleLocationChange(event: Event) {
 		selectedLocationId = (event.currentTarget as HTMLSelectElement).value;
@@ -127,7 +129,8 @@
 						<p class="eyebrow">Setup</p>
 						<h1>Queue configuration</h1>
 						<p class="staff-page-subhead">
-							Configure queues and operating sessions for {data.organization.organizationName}.
+							Configure queues and operating sessions for {data
+								.organization.organizationName}.
 						</p>
 					</div>
 					<span class="staff-active-pill"
@@ -148,13 +151,55 @@
 					>
 						Queue configuration updated.
 					</p>{/if}
-				{#if data.opened}<p class="staff-feedback success-message" role="status">Session opened. Ticket numbering starts at 1 for this session.</p>{/if}
-				{#if data.sessionUpdated === "paused"}<p class="staff-feedback success-message" role="status">Session paused. Visitors can no longer join this session.</p>{/if}
-				{#if data.sessionUpdated === "open"}<p class="staff-feedback success-message" role="status">Session resumed. Visitors can join again.</p>{/if}
-				{#if data.sessionUpdated === "closed"}<p class="staff-feedback success-message" role="status">Session closed. Its history is preserved; a new session can now be opened.</p>{/if}
-				{#if data.sessionCloseBlocked}<p class="staff-feedback error-message" role="alert">Resolve all waiting, called, and serving tickets before closing this session.</p>{/if}
-				{#each data.blockedOccurrences as occurrence}<p class="staff-feedback error-message" role="alert">Scheduled occurrence for {occurrence.queueName} on {occurrence.occurrenceDate} was blocked because a prior session was still open. Close or resolve that session, then review the next scheduled occurrence.</p>{/each}
-				{#if data.sessionUnchanged}<p class="staff-feedback success-message" role="status">The session was already in that state; no duplicate transition was recorded.</p>{/if}
+				{#if data.opened}<p
+						class="staff-feedback success-message"
+						role="status"
+					>
+						Session opened. Ticket numbering starts at 1 for this
+						session.
+					</p>{/if}
+				{#if data.sessionUpdated === "paused"}<p
+						class="staff-feedback success-message"
+						role="status"
+					>
+						Session paused. Visitors can no longer join this
+						session.
+					</p>{/if}
+				{#if data.sessionUpdated === "open"}<p
+						class="staff-feedback success-message"
+						role="status"
+					>
+						Session resumed. Visitors can join again.
+					</p>{/if}
+				{#if data.sessionUpdated === "closed"}<p
+						class="staff-feedback success-message"
+						role="status"
+					>
+						Session closed. Its history is preserved; a new session
+						can now be opened.
+					</p>{/if}
+				{#if data.sessionCloseBlocked}<p
+						class="staff-feedback error-message"
+						role="alert"
+					>
+						Resolve all waiting, called, and serving tickets before
+						closing this session.
+					</p>{/if}
+				{#each data.blockedOccurrences as occurrence}<p
+						class="staff-feedback error-message"
+						role="alert"
+					>
+						Scheduled occurrence for {occurrence.queueName} on {occurrence.occurrenceDate}
+						was blocked because a prior session was still open. Close
+						or resolve that session, then review the next scheduled occurrence.
+					</p>{/each}
+				{#if data.sessionUnchanged}<p
+						class="staff-feedback success-message"
+						role="status"
+					>
+						The session was already in that state; no duplicate
+						transition was recorded.
+					</p>{/if}
 				{#if form?.message}<p
 						class="staff-feedback error-message"
 						role="alert"
@@ -212,7 +257,7 @@
 										<select
 											name="locationId"
 											bind:value={selectedLocationId}
-							onchange={handleLocationChange}
+											onchange={handleLocationChange}
 											required
 										>
 											<option value="" disabled
@@ -346,10 +391,10 @@
 												scope="col">Location</th
 											><th scope="col">Service</th><th
 												scope="col">Visitor identity</th
-											><th scope="col">Queue status</th
-											><th scope="col">Session</th><th
-												scope="col"
-														>Active ticket capacity</th><th scope="col">Actions</th></tr
+											><th scope="col">Status</th><th
+												scope="col">Session</th
+											>
+											<th scope="col">Actions</th></tr
 										></thead
 									>
 									<tbody>
@@ -383,45 +428,118 @@
 															)
 														: "No open session"}</td
 												>
-												<td
-													>{queue.activeTicketCapacity ??
-														"Unlimited"}</td
-												>
-											<td>
-												<div class="queue-row-actions">
-									<a class="queue-edit-link" href={`/staff/queues/${encodeURIComponent(queue.id)}/board?organization=${encodeURIComponent(data.organization.organizationId)}`}>Live board</a>
-													{#if queue.sessionId && queue.transitionRequestId && (queue.sessionState === "open" || queue.sessionState === "paused")}
-														<form method="POST" action={`?/changeSessionState&organization=${encodeURIComponent(data.organization.organizationId)}`}>
-															<input type="hidden" name="queueId" value={queue.id} />
-															<input type="hidden" name="sessionId" value={queue.sessionId} />
-															<input type="hidden" name="requestId" value={queue.transitionRequestId} />
-															<button class="queue-edit-link" type="submit" name="transition" value={queue.sessionState === "open" ? "pause" : "resume"}>{queue.sessionState === "open" ? "Pause" : "Resume"}</button>
-															<button class="queue-edit-link" type="submit" name="transition" value="close">Close session</button>
-														</form>
-													{/if}
-								{#if queue.sessionState === null && queue.scheduleEnabled !== 1 && queue.isActive === 1 && queue.locationIsActive === 1 && queue.serviceIsActive === 1}
-									<a class="queue-edit-link" href={`/staff/queues/${encodeURIComponent(queue.id)}?organization=${encodeURIComponent(data.organization.organizationId)}&session=1`}>Configure session</a>
-								{:else if queue.sessionState === null && queue.scheduleEnabled === 1}
-									<span class="queue-label-hint">A recurring schedule opens sessions automatically.</span>
-								{:else if queue.sessionState === null}
-														<span class="queue-label-hint">Activate queue, location, and service to open a session.</span>
-													{/if}
-													{#if data.organization.role === "admin"}
-									<a class="queue-edit-link" href={`/staff/queues/${encodeURIComponent(queue.id)}/schedule?organization=${encodeURIComponent(data.organization.organizationId)}`}>Schedule</a>
-														<form method="POST" action={`?/setQueueActive&organization=${encodeURIComponent(data.organization.organizationId)}`}>
-															<input type="hidden" name="queueId" value={queue.id} />
-															<input type="hidden" name="active" value={queue.isActive === 1 ? '0' : '1'} />
-															<button class="queue-edit-link" type="submit" aria-label={`${queue.isActive === 1 ? 'Deactivate' : 'Activate'} ${queue.name}`}>
-																{queue.isActive === 1 ? 'Deactivate' : 'Activate'}
-															</button>
-														</form>
-														<a
-															class="queue-edit-link"
-															href={`/staff/queues/${encodeURIComponent(queue.id)}?organization=${encodeURIComponent(data.organization.organizationId)}`}
-															>Edit</a
-														>
-													<QueueShareLink publicId={queue.publicId} queueName={queue.name} />
-													{/if}
+
+												<td>
+													<div
+														class="queue-row-actions"
+													>
+														{#if queue.sessionId && queue.transitionRequestId && (queue.sessionState === "open" || queue.sessionState === "paused")}
+															<form
+																method="POST"
+																action={`?/changeSessionState&organization=${encodeURIComponent(data.organization.organizationId)}`}
+															>
+																<input
+																	type="hidden"
+																	name="queueId"
+																	value={queue.id}
+																/>
+																<input
+																	type="hidden"
+																	name="sessionId"
+																	value={queue.sessionId}
+																/>
+																<input
+																	type="hidden"
+																	name="requestId"
+																	value={queue.transitionRequestId}
+																/>
+																<button
+																	class="queue-edit-link"
+																	type="submit"
+																	name="transition"
+																	value={queue.sessionState ===
+																	"open"
+																		? "pause"
+																		: "resume"}
+																	>{queue.sessionState ===
+																	"open"
+																		? "Pause"
+																		: "Resume"}</button
+																>
+																<button
+																	class="queue-edit-link"
+																	type="submit"
+																	name="transition"
+																	value="close"
+																	>Close
+																	session</button
+																>
+															</form>
+														{/if}
+														{#if queue.sessionState === null && queue.scheduleEnabled !== 1 && queue.isActive === 1 && queue.locationIsActive === 1 && queue.serviceIsActive === 1}
+															<a
+																class="queue-edit-link"
+																href={`/staff/queues/${encodeURIComponent(queue.id)}?organization=${encodeURIComponent(data.organization.organizationId)}&session=1`}
+																>Configure
+																session</a
+															>
+														{:else if queue.sessionState === null && queue.scheduleEnabled === 1}
+															<span
+																class="queue-label-hint"
+																>A recurring
+																schedule opens
+																sessions
+																automatically.</span
+															>
+														{:else if queue.sessionState === null}
+															<span
+																class="queue-label-hint"
+																>Activate queue,
+																location, and
+																service to open
+																a session.</span
+															>
+														{/if}
+														{#if data.organization.role === "admin"}
+															<a
+																class="queue-edit-link"
+																href={`/staff/queues/${encodeURIComponent(queue.id)}/schedule?organization=${encodeURIComponent(data.organization.organizationId)}`}
+																>Schedule</a
+															>
+															<form
+																method="POST"
+																action={`?/setQueueActive&organization=${encodeURIComponent(data.organization.organizationId)}`}
+															>
+																<input
+																	type="hidden"
+																	name="queueId"
+																	value={queue.id}
+																/>
+																<input
+																	type="hidden"
+																	name="active"
+																	value={queue.isActive ===
+																	1
+																		? "0"
+																		: "1"}
+																/>
+																<button
+																	class="queue-edit-link"
+																	type="submit"
+																	aria-label={`${queue.isActive === 1 ? "Deactivate" : "Activate"} ${queue.name}`}
+																>
+																	{queue.isActive ===
+																	1
+																		? "Deactivate"
+																		: "Activate"}
+																</button>
+															</form>
+															<a
+																class="queue-edit-link"
+																href={`/staff/queues/${encodeURIComponent(queue.id)}?organization=${encodeURIComponent(data.organization.organizationId)}`}
+																>Edit</a
+															>
+														{/if}
 													</div>
 												</td>
 											</tr>

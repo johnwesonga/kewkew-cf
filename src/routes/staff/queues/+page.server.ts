@@ -385,7 +385,13 @@ export const actions: Actions = {
 				nextTicketNumber: sql<number>`1`.as('next_ticket_number'),
 				nextQueueSequence: sql<number>`1`.as('next_queue_sequence'),
 				lastJoinAttemptDigest: sql<null>`NULL`.as('last_join_attempt_digest'),
-				scheduledServiceStartAt: sql<string | null>`${scheduledStart.timestamp}`.as('scheduled_service_start_at')
+				scheduleId: sql<null>`NULL`.as('schedule_id'),
+				scheduleVersion: sql<null>`NULL`.as('schedule_version'),
+				occurrenceKey: sql<null>`NULL`.as('occurrence_key'),
+				signupOpensAt: sql<null>`NULL`.as('signup_opens_at'),
+				scheduledServiceStartAt: sql<string | null>`${scheduledStart.timestamp}`.as('scheduled_service_start_at'),
+				occurrenceTicketCap: sql<null>`NULL`.as('occurrence_ticket_cap'),
+				occurrenceStatus: sql<'active'>`'active'`.as('occurrence_status')
 			})
 				.from(queues)
 				.innerJoin(locations, and(
