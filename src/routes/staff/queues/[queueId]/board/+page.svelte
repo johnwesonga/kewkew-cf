@@ -78,13 +78,18 @@
 					 href={`/staff/live${organizationQuery}`}
 					>← Back to live queues</a
 				>
-				<header class="staff-page-heading">
+				<header class="staff-page-heading queue-board-heading">
 					<div>
 						<p class="eyebrow">Live queue</p>
 						<h1>{data.queue.name}</h1>
 						<p class="staff-page-subhead">
 							{data.queue.locationName} · {data.queue.serviceName}
 						</p>
+						{#if data.scheduledServiceStartAt}
+							<p class="queue-board-scheduled-start">
+								Scheduled service starts {new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short', timeZone: data.queue.timezone }).format(new Date(data.scheduledServiceStartAt))} ({data.queue.timezone}).
+							</p>
+						{/if}
 					</div>
 					<div class="queue-board-controls">
 						<a class="queue-edit-link" href={`/staff/queues/${encodeURIComponent(data.queue.id)}/statistics${organizationQuery}`}>Statistics</a>
@@ -122,7 +127,6 @@
 								>
 							</form>
 						{/if}
-						{#if data.scheduledServiceStartAt}<p class="staff-page-subhead">Scheduled service starts {new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short', timeZone: data.queue.timezone }).format(new Date(data.scheduledServiceStartAt))} ({data.queue.timezone}).</p>{/if}
 						<button
 							class="queue-edit-link"
 							type="button"
