@@ -117,7 +117,12 @@ export const actions: Actions = {
 		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(email) || !['admin', 'operator'].includes(role)) return fail(400, { message: 'Enter a valid email and role.' });
 		if (role === 'operator' && locationIds.length === 0) return fail(400, { message: 'Choose at least one location for an operator.' });
 		const locationRows = locationIds.length
-			? await db.select({ id: locations.id }).from(locations).where(and(eq(locations.organizationId, organizationId), inArray(locations.id, locationIds)))
+			? await db
+				.select({ id: locations.id })
+				.from(locations)
+				.where(
+					and(eq(locations.organizationId, organizationId),
+						inArray(locations.id, locationIds)))
 			: [];
 		if (role === 'operator' && locationRows.length !== locationIds.length) return fail(400, { message: 'Choose locations from this organization.' });
 		const [existingMember] = await db
@@ -197,23 +202,41 @@ export const actions: Actions = {
 		const locationIds = [...new Set(form.getAll('locationIds').map(String))];
 		if (!['admin', 'operator'].includes(role) || (role === 'operator' && !locationIds.length)) return fail(400, { message: 'Operators must have at least one location.' });
 		const roleValue = role as Role;
-		const locationRows = roleValue === 'admin' ? [] : await db.select({ id: locations.id }).from(locations).where(and(
-			eq(locations.organizationId, organizationId), inArray(locations.id, locationIds)
-		));
+		const locationRows = roleValue === 'admin' ? [] : await db
+			.select({ id: locations.id })
+			.from(locations).where(and(
+				eq(locations.organizationId, organizationId), inArray(locations.id, locationIds)
+			));
 		if (roleValue === 'operator' && locationRows.length !== locationIds.length) return fail(400, { message: 'Choose locations from this organization.' });
-		const [current] = await db.select({ role: organizationMemberships.role, status: organizationMemberships.status })
-			.from(organizationMemberships).where(and(eq(organizationMemberships.organizationId, organizationId), eq(organizationMemberships.userId, userId))).limit(1);
+		const [current] = await db
+			.select({
+				role: organizationMemberships.role,
+				status: organizationMemberships.status
+			})
+			.from(organizationMemberships)
+			.where(and(eq(organizationMemberships.organizationId, organizationId),
+				eq(organizationMemberships.userId, userId)))
+			.limit(1);
+
 		if (!current) error(404, 'Member not found');
 		const now = new Date().toISOString();
-		const beforeLocations = await db.select({ locationId: membershipLocationAccess.locationId }).from(membershipLocationAccess)
+		const beforeLocations = await db
+			.select({ locationId: membershipLocationAccess.locationId })
+			.from(membershipLocationAccess)
 			.where(and(eq(membershipLocationAccess.organizationId, organizationId), eq(membershipLocationAccess.userId, userId)))
 			.orderBy(asc(membershipLocationAccess.locationId));
+
 		const details = JSON.stringify({ beforeLocations: beforeLocations.map((row) => row.locationId), afterLocations: roleValue === 'admin' ? [] : locationIds });
-		const activeAdmins = db.select({ value: count() }).from(organizationMemberships).where(and(
-			eq(organizationMemberships.organizationId, organizationId),
-			eq(organizationMemberships.role, 'admin'),
-			eq(organizationMemberships.status, 'active')
-		));
+
+		const activeAdmins = db
+			.select({ value: count() })
+			.from(organizationMemberships)
+			.where(and(
+				eq(organizationMemberships.organizationId, organizationId),
+				eq(organizationMemberships.role, 'admin'),
+				eq(organizationMemberships.status, 'active')
+			));
+
 		const updatedMembership = db.update(organizationMemberships).set({ role: roleValue, updatedAt: now }).where(and(
 			eq(organizationMemberships.organizationId, organizationId),
 			eq(organizationMemberships.userId, userId),
@@ -250,7 +273,9 @@ export const actions: Actions = {
 			afterStatus: sql<Status>`${current.status}`.as('after_status'),
 			detailsJson: sql<string>`${details}`.as('details_json'),
 			createdAt: sql<string>`${now}`.as('created_at')
-		}).from(organizationMemberships).where(marker)));
+		}).from(organizationMemberships)
+			.where(marker)));
+
 		const result = await db.batch(operations as unknown as Parameters<typeof db.batch>[0]);
 		if (result[0]?.meta.changes !== 1) return fail(409, { message: 'Update could not be applied. The last active administrator cannot be demoted.' });
 		return { success: 'Staff access updated.' };
@@ -261,33 +286,54 @@ export const actions: Actions = {
 		const organizationId = url.searchParams.get('organization') ?? '';
 		const userId = url.searchParams.get('member') ?? '';
 		await requireAdmin(db, organizationId, locals.user.id);
-		const [member] = await db.select({ role: organizationMemberships.role, status: organizationMemberships.status })
-			.from(organizationMemberships).where(and(eq(organizationMemberships.organizationId, organizationId), eq(organizationMemberships.userId, userId))).limit(1);
+		const [member] = await db
+			.select({
+				role: organizationMemberships.role,
+				status: organizationMemberships.status
+			})
+			.from(organizationMemberships)
+			.where(and(eq(organizationMemberships.organizationId, organizationId), eq(organizationMemberships.userId, userId)))
+			.limit(1);
 		if (!member) error(404, 'Member not found');
 		const next: Status = member.status === 'active' ? 'suspended' : 'active';
 		const now = new Date().toISOString();
-		const adminCount = db.select({ value: count() }).from(organizationMemberships).where(and(
-			eq(organizationMemberships.organizationId, organizationId), eq(organizationMemberships.role, 'admin'), eq(organizationMemberships.status, 'active')
-		));
-		const update = db.update(organizationMemberships).set({ status: next, updatedAt: now }).where(and(
-			eq(organizationMemberships.organizationId, organizationId),
-			eq(organizationMemberships.userId, userId),
-			eq(organizationMemberships.status, member.status),
-			exists(db.select({ userId: organizationMemberships.userId }).from(organizationMemberships).where(and(
-				eq(organizationMemberships.organizationId, organizationId), eq(organizationMemberships.userId, locals.user.id),
-				eq(organizationMemberships.role, 'admin'), eq(organizationMemberships.status, 'active')
-			))),
-			or(ne(organizationMemberships.status, 'active'), ne(organizationMemberships.role, 'admin'), sql`(${adminCount}) > 1`)
-		));
+		const adminCount = db
+			.select({ value: count() })
+			.from(organizationMemberships)
+			.where(and(
+				eq(organizationMemberships.organizationId, organizationId), eq(organizationMemberships.role, 'admin'), eq(organizationMemberships.status, 'active')
+			));
+		const update = db
+			.update(organizationMemberships)
+			.set({ status: next, updatedAt: now })
+			.where(and(
+				eq(organizationMemberships.organizationId, organizationId),
+				eq(organizationMemberships.userId, userId),
+				eq(organizationMemberships.status, member.status),
+				exists(db.select({ userId: organizationMemberships.userId }).from(organizationMemberships).where(and(
+					eq(organizationMemberships.organizationId, organizationId), eq(organizationMemberships.userId, locals.user.id),
+					eq(organizationMemberships.role, 'admin'), eq(organizationMemberships.status, 'active')
+				))),
+				or(ne(organizationMemberships.status, 'active'), ne(organizationMemberships.role, 'admin'), sql`(${adminCount}) > 1`)
+			));
 		const marker = and(eq(organizationMemberships.organizationId, organizationId), eq(organizationMemberships.userId, userId), eq(organizationMemberships.status, next), eq(organizationMemberships.updatedAt, now));
-		const audit = db.insert(membershipAuditEvents).select(db.select({
-			id: sql<string>`${crypto.randomUUID()}`.as('id'), organizationId: sql<string>`${organizationId}`.as('organization_id'),
-			actorUserId: sql<string>`${locals.user.id}`.as('actor_user_id'), subjectUserId: sql<string>`${userId}`.as('subject_user_id'),
-			changeType: sql<'suspended' | 'reactivated'>`${next === 'active' ? 'reactivated' : 'suspended'}`.as('change_type'),
-			beforeRole: organizationMemberships.role, afterRole: organizationMemberships.role,
-			beforeStatus: sql<Status>`${member.status}`.as('before_status'), afterStatus: organizationMemberships.status,
-			detailsJson: sql<null>`NULL`.as('details_json'), createdAt: sql<string>`${now}`.as('created_at')
-		}).from(organizationMemberships).where(marker));
+		const audit = db.insert(membershipAuditEvents)
+			.select(db
+				.select({
+					id: sql<string>`${crypto.randomUUID()}`.as('id'),
+					organizationId: sql<string>`${organizationId}`.as('organization_id'),
+					actorUserId: sql<string>`${locals.user.id}`.as('actor_user_id'),
+					subjectUserId: sql<string>`${userId}`.as('subject_user_id'),
+					changeType: sql<'suspended' | 'reactivated'>`${next === 'active' ? 'reactivated' : 'suspended'}`.as('change_type'),
+					beforeRole: organizationMemberships.role,
+					afterRole: organizationMemberships.role,
+					beforeStatus: sql<Status>`${member.status}`.as('before_status'),
+					afterStatus: organizationMemberships.status,
+					detailsJson: sql<null>`NULL`.as('details_json'),
+					createdAt: sql<string>`${now}`.as('created_at')
+				})
+				.from(organizationMemberships)
+				.where(marker));
 		const result = await db.batch([update, audit]);
 		if (result[0]?.meta.changes !== 1 || result[1]?.meta.changes !== 1) return fail(409, { message: 'The last active administrator cannot be suspended.' });
 		return { success: next === 'active' ? 'Membership restored.' : 'Membership suspended.' };
@@ -298,10 +344,13 @@ export const actions: Actions = {
 		const organizationId = url.searchParams.get('organization') ?? '';
 		const invitationId = url.searchParams.get('invitation') ?? '';
 		await requireAdmin(db, organizationId, locals.user.id);
-		const result = await db.update(staffInvitations).set({ revokedAt: new Date().toISOString() }).where(and(
-			eq(staffInvitations.id, invitationId), eq(staffInvitations.organizationId, organizationId),
-			isNull(staffInvitations.acceptedAt), isNull(staffInvitations.revokedAt)
-		));
+		const result = await db
+			.update(staffInvitations)
+			.set({ revokedAt: new Date().toISOString() })
+			.where(and(
+				eq(staffInvitations.id, invitationId), eq(staffInvitations.organizationId, organizationId),
+				isNull(staffInvitations.acceptedAt), isNull(staffInvitations.revokedAt)
+			));
 		if (result.meta.changes !== 1) return fail(404, { message: 'Invitation is no longer pending.' });
 		return { success: 'Invitation revoked. Issue a new invitation to retry.' };
 	}

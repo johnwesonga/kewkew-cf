@@ -119,21 +119,23 @@ export const actions: Actions = {
 		if (!configuration.valid) return invalid(configuration.message);
 
 		const db = createDatabase((cloudflareEnv as Env).DB);
-		const result = await db.update(queues).set({
-			name: configuration.value.name,
-			identityPolicy: configuration.value.identityPolicy,
-			activeTicketCapacity: configuration.value.activeTicketCapacity,
-			updatedAt: new Date().toISOString()
-		}).where(and(
-			eq(queues.id, params.queueId),
-			eq(queues.organizationId, organizationId),
-			exists(db.select({ userId: organizationMemberships.userId }).from(organizationMemberships).where(and(
-				eq(organizationMemberships.organizationId, queues.organizationId),
-				eq(organizationMemberships.userId, locals.user.id),
-				eq(organizationMemberships.role, 'admin'),
-				eq(organizationMemberships.status, 'active')
-			)))
-		)).run();
+		const result = await db
+			.update(queues)
+			.set({
+				name: configuration.value.name,
+				identityPolicy: configuration.value.identityPolicy,
+				activeTicketCapacity: configuration.value.activeTicketCapacity,
+				updatedAt: new Date().toISOString()
+			}).where(and(
+				eq(queues.id, params.queueId),
+				eq(queues.organizationId, organizationId),
+				exists(db.select({ userId: organizationMemberships.userId }).from(organizationMemberships).where(and(
+					eq(organizationMemberships.organizationId, queues.organizationId),
+					eq(organizationMemberships.userId, locals.user.id),
+					eq(organizationMemberships.role, 'admin'),
+					eq(organizationMemberships.status, 'active')
+				)))
+			)).run();
 		if (result.meta.changes !== 1) error(404, 'Queue not found');
 
 		redirect(303, `/staff/queues?organization=${encodeURIComponent(organizationId)}&updated=1`);
