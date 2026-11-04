@@ -1,7 +1,7 @@
 import { env as cloudflareEnv } from 'cloudflare:workers';
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { and, asc, count, desc, eq, exists, inArray, not, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, exists, inArray, isNull, not, or, sql } from 'drizzle-orm';
 import { createDatabase } from '#lib/server/database';
 import { locations, membershipLocationAccess, organizationMemberships, organizations, queueSessions, queues, services, ticketEvents, tickets } from '#lib/server/schema';
 import { presentStaffQueueBoard } from '#lib/staff-queue-board';
@@ -1058,7 +1058,11 @@ export const actions: Actions = {
 				eq(tickets.queueSessionId, activeSession.id),
 				eq(tickets.status, 'waiting'),
 				inArray(queueSessions.state, ['open', 'paused']),
-				sql`${queueSessions.scheduleId} IS NULL OR ${queueSessions.scheduledServiceStartAt} <= ${now}`,
+				or(
+					isNull(queueSessions.scheduleId),
+					isNull(queueSessions.scheduledServiceStartAt),
+					sql`${queueSessions.scheduledServiceStartAt} <= ${now}`
+				)!,
 				authorizedMembership,
 				canOperateQueue,
 				not(exists(db.select({ id: tickets.id }).from(tickets).where(eq(tickets.transitionRequestId, requestId))))

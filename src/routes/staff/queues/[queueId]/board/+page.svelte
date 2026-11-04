@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { invalidateAll } from "$app/navigation";
+	import { refreshAll } from "$app/navigation";
 	import { onMount } from "svelte";
 	import StaffSidebar from "#lib/StaffSidebar.svelte";
 	import StaffAccountChip from "#lib/StaffAccountChip.svelte";
@@ -11,7 +11,7 @@
 	);
 
 	onMount(() => {
-		const interval = window.setInterval(() => void invalidateAll(), 10_000);
+		const interval = window.setInterval(() => void refreshAll(), 10_000);
 		return () => window.clearInterval(interval);
 	});
 </script>
@@ -130,7 +130,7 @@
 						<button
 							class="queue-edit-link"
 							type="button"
-							onclick={() => invalidateAll()}>Refresh</button
+							onclick={() => refreshAll()}>Refresh</button
 						>
 						{#if data.organization.role === "admin"}
 							<a
