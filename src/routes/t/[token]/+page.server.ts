@@ -29,7 +29,9 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
 			queueName: ticket.queueName,
 			organizationName: queueContext?.organizationName ?? 'Queue',
 			serviceName: ticket.serviceName,
-			locationName: ticket.locationName
+			locationName: ticket.locationName,
+			scheduledServiceStartAt: ticket.scheduledServiceStartAt,
+			timezone: ticket.timezone
 		}
 	};
 };

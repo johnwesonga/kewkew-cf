@@ -68,6 +68,35 @@ export function localDateTimeToUtc(date: string, time: string, timezone: string)
 	return best ? new Date(best.instant).toISOString() : null;
 }
 
+export function resolveManualServiceStart(dateInput: string, timeInput: string, timezone: string):
+	| { valid: true; timestamp: string | null; ambiguous: boolean }
+	| { valid: false; message: string } {
+	const date = dateInput.trim();
+	const time = timeInput.trim();
+	if (!date && !time) return { valid: true, timestamp: null, ambiguous: false };
+	if (!date || !time) return { valid: false, message: 'Enter both the service start date and time, or leave both blank.' };
+	if (!isValidIanaTimezone(timezone)) return { valid: false, message: 'The queue location must have a valid IANA timezone.' };
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)) {
+		return { valid: false, message: 'Enter a valid service start date and time.' };
+	}
+	const [year, month, day] = date.split('-').map(Number);
+	const [hour, minute] = time.split(':').map(Number);
+	const target = Date.UTC(year!, month! - 1, day!, hour!, minute!);
+	if (new Date(target).toISOString().slice(0, 10) !== date || hour! > 23 || minute! > 59) {
+		return { valid: false, message: 'Enter a valid service start date and time.' };
+	}
+	const candidates: number[] = [];
+	for (let offset = -14 * 60; offset <= 14 * 60; offset += 15) {
+		const instant = target + offset * 60_000;
+		const parts = zonedParts(instant, timezone);
+		if (`${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}` === `${date}T${time}`) candidates.push(instant);
+	}
+	if (candidates.length === 0) {
+		return { valid: false, message: 'That local time does not exist because of a daylight-saving clock change. Choose another time.' };
+	}
+	return { valid: true, timestamp: new Date(Math.min(...candidates)).toISOString(), ambiguous: candidates.length > 1 };
+}
+
 export function occurrenceKey(date: string): string {
 	return date;
 }

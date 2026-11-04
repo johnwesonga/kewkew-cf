@@ -5,6 +5,7 @@ import { and, asc, count, eq, exists, inArray, not, or, sql } from 'drizzle-orm'
 import { createDatabase } from '#lib/server/database';
 import { filterStaffQueues } from '#lib/server/staff-access';
 import { canCloseQueueSession, canOpenQueueSession, resolveSessionTransition, validateQueueConfiguration } from '#lib/server/queue-rules';
+import { resolveManualServiceStart } from '#lib/server/queue-scheduling';
 import {
 	locations,
 	membershipLocationAccess,
@@ -152,7 +153,6 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		locationCount: locationCountRows[0]?.value ?? 0,
 		queues: visibleQueues.map((queue) => ({
 			...queue,
-			openRequestId: crypto.randomUUID(),
 			transitionRequestId: queue.sessionId ? crypto.randomUUID() : null
 		})),
 		queueLocations,
@@ -298,6 +298,8 @@ export const actions: Actions = {
 		const returnTo = (result: string) => `${returnPath}?organization=${encodeURIComponent(organizationId)}&${result}`;
 		const queueId = String(form.get('queueId') ?? '');
 		const openRequestId = String(form.get('openRequestId') ?? '');
+		const scheduledServiceStartDate = String(form.get('scheduledServiceStartDate') ?? '');
+		const scheduledServiceStartTime = String(form.get('scheduledServiceStartTime') ?? '');
 		const invalid = (message: string, status = 400) => fail(status, { message });
 		if (!organizationId || !queueId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(openRequestId)) {
 			return invalid('This session form has expired. Reload the page and try again.');
@@ -331,6 +333,7 @@ export const actions: Actions = {
 			queueActive: queues.isActive,
 			locationActive: locations.isActive,
 			serviceActive: services.isActive,
+			timezone: locations.timezone,
 			scheduleEnabled: sql<number>`COALESCE((SELECT enabled FROM queue_schedules WHERE queue_id = ${queues.id}), 0)`
 		})
 			.from(queues)
@@ -354,6 +357,12 @@ export const actions: Actions = {
 		if (!canOpenQueueSession(eligibleQueue.queueActive, eligibleQueue.locationActive, eligibleQueue.serviceActive)) {
 			return invalid('Activate the queue, location, and service before opening a session.');
 		}
+		const scheduledStart = resolveManualServiceStart(
+			scheduledServiceStartDate,
+			scheduledServiceStartTime,
+			eligibleQueue.timezone
+		);
+		if (!scheduledStart.valid) return invalid(scheduledStart.message);
 
 		const now = new Date().toISOString();
 		const currentSession = db.select({ id: queueSessions.id })
@@ -375,7 +384,8 @@ export const actions: Actions = {
 				transitionRequestId: sql<null>`NULL`.as('transition_request_id'),
 				nextTicketNumber: sql<number>`1`.as('next_ticket_number'),
 				nextQueueSequence: sql<number>`1`.as('next_queue_sequence'),
-				lastJoinAttemptDigest: sql<null>`NULL`.as('last_join_attempt_digest')
+				lastJoinAttemptDigest: sql<null>`NULL`.as('last_join_attempt_digest'),
+				scheduledServiceStartAt: sql<string | null>`${scheduledStart.timestamp}`.as('scheduled_service_start_at')
 			})
 				.from(queues)
 				.innerJoin(locations, and(
@@ -393,6 +403,7 @@ export const actions: Actions = {
 					eq(queues.isActive, 1),
 					eq(locations.isActive, 1),
 					eq(services.isActive, 1),
+					eq(locations.timezone, eligibleQueue.timezone),
 					access,
 					not(exists(db.select({ id: queueSchedules.id }).from(queueSchedules).where(and(
 						eq(queueSchedules.organizationId, queues.organizationId),

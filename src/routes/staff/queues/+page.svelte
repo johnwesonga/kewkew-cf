@@ -400,11 +400,7 @@
 														</form>
 													{/if}
 								{#if queue.sessionState === null && queue.scheduleEnabled !== 1 && queue.isActive === 1 && queue.locationIsActive === 1 && queue.serviceIsActive === 1}
-														<form method="POST" action={`?/openSession&organization=${encodeURIComponent(data.organization.organizationId)}`}>
-															<input type="hidden" name="queueId" value={queue.id} />
-															<input type="hidden" name="openRequestId" value={queue.openRequestId} />
-															<button class="queue-edit-link" type="submit">Open session</button>
-														</form>
+									<a class="queue-edit-link" href={`/staff/queues/${encodeURIComponent(queue.id)}?organization=${encodeURIComponent(data.organization.organizationId)}&session=1`}>Configure session</a>
 								{:else if queue.sessionState === null && queue.scheduleEnabled === 1}
 									<span class="queue-label-hint">A recurring schedule opens sessions automatically.</span>
 								{:else if queue.sessionState === null}

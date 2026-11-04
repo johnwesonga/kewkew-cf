@@ -41,7 +41,7 @@ Related stories: [admin queue configuration](admin-queue-configuration-user-stor
 
 ## AQ-10: Set a service start time for a manual queue session
 
-**Status** — Planned
+**Status** — Implemented in the Cloudflare rebuild
 
 **User story** — As an organization administrator or authorized staff member opening a manual queue session, I want to optionally set when service is scheduled to start so visitors and staff know the planned start time even when the queue has no recurring schedule.
 
@@ -72,6 +72,8 @@ Related stories: [admin queue configuration](admin-queue-configuration-user-stor
 
 **Dependencies** — AQ-1, AQ-2, AQ-9, visitor signup and ticket tracking.
 
+**AQ-10 implementation note** — Manual session opening accepts an optional local date and time and resolves it with the queue location's timezone. Nonexistent daylight-saving times are rejected. When the local time is ambiguous, the earlier instant is selected, matching AQ-9's documented rule. The resolved instant is stored in the session's `scheduled_service_start_at` field, which was added for recurring occurrences; ticket tracking reads that session value. The public queue page, private ticket page, and staff board format the stored instant in the location timezone. Manual sessions remain callable before this time.
+
 ## VF-11: See when queue service is scheduled to begin
 
 **Status** — Planned
@@ -91,7 +93,7 @@ Related stories: [admin queue configuration](admin-queue-configuration-user-stor
 ## Initial policy decisions
 
 - Signup opens at the configured local time. It remains available after service begins until the occurrence reaches its cap or staff close it under the existing queue-session rules. A separate signup-close time is out of scope for this first slice.
-- Service-start times are recurring wall-clock times in the location timezone. Daylight-saving changes follow the timezone database rules for that local date; ambiguous or nonexistent local times must be resolved explicitly by the scheduler and documented.
+- Service-start times are recurring wall-clock times in the location timezone. Daylight-saving changes follow the timezone database rules for that local date; repeated times use the earlier instant and nonexistent times move to the first valid minute after the gap.
 - If a prior session has not been closed by the next scheduled occurrence, the system must not silently create a second open session. Surface the missed occurrence to staff for resolution.
 - The business must decide how staff close an occurrence with unserved visitors before production scheduling is enabled; current queue-session close rules require active tickets to be resolved first.
 

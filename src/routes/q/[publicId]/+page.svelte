@@ -2,6 +2,11 @@
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
+	function formatScheduledStart(timestamp: string, timezone: string): string {
+		return new Intl.DateTimeFormat(undefined, {
+			weekday: 'long', dateStyle: 'medium', timeStyle: 'short', timeZone: timezone
+		}).format(new Date(timestamp));
+	}
 </script>
 
 <svelte:head>
@@ -19,6 +24,9 @@
 		<p class="eyebrow">{data.queue.organizationName}</p>
 		<h1 id="public-queue-title">{data.queue.name}</h1>
 		<p class="public-queue-service">{data.queue.serviceName} · {data.queue.locationName}</p>
+		{#if data.queue.scheduledServiceStartAt}
+			<p class="public-scheduled-start"><strong>Scheduled service start</strong><span>{formatScheduledStart(data.queue.scheduledServiceStartAt, data.queue.timezone)} · {data.queue.timezone}</span></p>
+		{/if}
 		{#if data.signupAvailable}
 			<div class="public-queue-state available" role="status">
 				<span aria-hidden="true"></span>

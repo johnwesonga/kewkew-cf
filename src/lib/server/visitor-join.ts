@@ -364,6 +364,8 @@ export async function getTicketByTrackingCredential(db: ReturnType<typeof create
 		serviceName: services.name,
 		locationName: locations.name,
 		sessionId: queueSessions.id,
+		scheduledServiceStartAt: queueSessions.scheduledServiceStartAt,
+		timezone: locations.timezone,
 		credentialId: trackingCredentials.id,
 		expiresAt: trackingCredentials.expiresAt,
 		revokedAt: trackingCredentials.revokedAt,

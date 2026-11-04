@@ -9,8 +9,8 @@
 </script>
 
 <svelte:head>
-	<title>Edit {data.queue.name} · Queues · Kewkew</title>
-	<meta name="description" content="Edit queue configuration." />
+	<title>{data.organization.role === "admin" ? "Configure" : "Open"} {data.queue.name} · Queues · Kewkew</title>
+	<meta name="description" content="Configure a queue or open a manual session." />
 </svelte:head>
 
 <div class="staff-shell">
@@ -37,19 +37,20 @@
 	</header>
 
 	<div class="staff-workspace">
-		<StaffSidebar organizationId={data.organization.organizationId} organizationRole="admin" locationCount={data.locationCount} active="queues" />
+		<StaffSidebar organizationId={data.organization.organizationId} organizationRole={data.organization.role} locationCount={data.locationCount} active="queues" />
 		<main class="staff-content">
 			<div class="staff-page">
 				<a class="queue-back-link" href={`/staff/queues${organizationQuery}`}>← Back to queue configuration</a>
 				<header class="staff-page-heading queue-edit-heading">
 					<div>
 						<p class="eyebrow">Queue configuration</p>
-						<h1>Edit queue</h1>
-						<p class="staff-page-subhead">Update future visitor rules for {data.queue.name}.</p>
+					<h1>{data.organization.role === "admin" ? "Queue configuration" : "Open a queue session"}</h1>
+					<p class="staff-page-subhead">{data.organization.role === "admin" ? `Update visitor rules or configure a manual session for ${data.queue.name}.` : `Configure and open a manual session for ${data.queue.name}.`}</p>
 					</div>
 				</header>
 				{#if form?.message}<p class="staff-feedback error-message" role="alert">{form.message}</p>{/if}
 
+				{#if data.organization.role === "admin"}
 				<section class="staff-card queue-edit-card" aria-labelledby="queue-edit-title">
 					<div class="staff-card-heading">
 						<div><h2 id="queue-edit-title">Queue details</h2><p class="queue-edit-context">Location and service are fixed after creation.</p></div>
@@ -83,6 +84,30 @@
 					<QueueShareLink publicId={data.queue.publicId} queueName={data.queue.name} expanded />
 				</div>
 			</section>
+				{/if}
+
+				<section class="staff-card manual-session-config-card" aria-labelledby="manual-session-title">
+					<div class="staff-card-heading"><div><h2 id="manual-session-title">Manual session</h2><p class="queue-edit-context">Optionally set when service is scheduled to start for this session.</p></div></div>
+					{#if data.queue.sessionId}
+						<p class="staff-feedback success-message">A session is already {data.queue.sessionState}. Manage it on the live board.</p>
+						<a class="queue-edit-link" href={`/staff/queues/${encodeURIComponent(data.queue.id)}/board?organization=${encodeURIComponent(data.organization.organizationId)}`}>Open live board</a>
+					{:else if data.queue.scheduleEnabled === 1}
+						<p class="queue-edit-context">This queue has a recurring schedule. It opens sessions automatically.</p>
+						{#if data.organization.role === "admin"}<a class="queue-edit-link" href={`/staff/queues/${encodeURIComponent(data.queue.id)}/schedule?organization=${encodeURIComponent(data.organization.organizationId)}`}>Manage recurring schedule</a>{/if}
+					{:else if data.queue.isActive !== 1 || data.queue.locationIsActive !== 1 || data.queue.serviceIsActive !== 1}
+						<p class="queue-edit-context">Activate the queue, location, and service before opening a session.</p>
+					{:else}
+						<form class="manual-session-config-form" method="POST" action={`/staff/queues?/openSession&organization=${encodeURIComponent(data.organization.organizationId)}`}>
+							<input type="hidden" name="queueId" value={data.queue.id} />
+							<input type="hidden" name="openRequestId" value={data.openRequestId} />
+							<input type="hidden" name="returnTo" value="/staff/live" />
+							<label class="manual-session-time-field" for="configured-service-start-date">Service start date <input id="configured-service-start-date" type="date" name="scheduledServiceStartDate" /></label>
+							<label class="manual-session-time-field" for="configured-service-start-time">Service start time ({data.queue.timezone}) <input id="configured-service-start-time" type="time" name="scheduledServiceStartTime" /></label>
+							<p class="queue-edit-context">Both fields are optional. Leave them blank for no scheduled start. Repeated daylight-saving times use the earlier instant; nonexistent times cannot be selected.</p>
+							<div class="queue-edit-actions"><button type="submit" class="queue-create-submit">Open session</button><a class="queue-cancel-link" href={`/staff/queues?organization=${encodeURIComponent(data.organization.organizationId)}`}>Cancel</a></div>
+						</form>
+					{/if}
+				</section>
 			</div>
 		</main>
 	</div>

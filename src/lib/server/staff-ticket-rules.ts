@@ -35,10 +35,11 @@ export function canCallNext(
 	sessionState: 'open' | 'paused' | 'closed' | null,
 	tickets: readonly { status: StaffTicketStatus }[],
 	scheduledServiceStartAt: string | null = null,
-	now = Date.now()
+	now = Date.now(),
+	isScheduledOccurrence = true
 ): boolean {
 	return (sessionState === 'open' || sessionState === 'paused')
-		&& (!scheduledServiceStartAt || Date.parse(scheduledServiceStartAt) <= now)
+		&& (!isScheduledOccurrence || !scheduledServiceStartAt || Date.parse(scheduledServiceStartAt) <= now)
 		&& tickets.some((ticket) => ticket.status === 'waiting');
 }
 

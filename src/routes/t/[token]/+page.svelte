@@ -4,6 +4,11 @@
 	import type { PageProps } from "./$types";
 	import { getVisitorTicketPresentation } from "#lib/visitor-ticket-presentation";
 	let { data, form }: PageProps = $props();
+	function formatScheduledStart(timestamp: string, timezone: string): string {
+		return new Intl.DateTimeFormat(undefined, {
+			weekday: 'long', dateStyle: 'medium', timeStyle: 'short', timeZone: timezone
+		}).format(new Date(timestamp));
+	}
 	const presentation = $derived(
 		getVisitorTicketPresentation(
 			data.ticket.status,
@@ -74,6 +79,9 @@
 			>
 		</p>
 		<h1 id="ticket-title">You are ticket #{data.ticket.number}</h1>
+		{#if data.ticket.scheduledServiceStartAt}
+			<p class="public-scheduled-start"><strong>Scheduled service start</strong><span>{formatScheduledStart(data.ticket.scheduledServiceStartAt, data.ticket.timezone)} · {data.ticket.timezone}</span></p>
+		{/if}
 
 		<div
 			class="public-queue-state"

@@ -220,33 +220,12 @@
 															>
 														</form>
 													{/if}
-													{#if queue.sessionState === null && queue.isActive === 1 && queue.locationIsActive === 1 && queue.serviceIsActive === 1}
-														<form
-															method="POST"
-															action={`/staff/queues?/openSession&organization=${encodeURIComponent(data.organization.organizationId)}`}
-														>
-															<input
-																type="hidden"
-																name="queueId"
-																value={queue.id}
-															/>
-															<input
-																type="hidden"
-																name="openRequestId"
-																value={queue.openRequestId}
-															/>
-															<input
-																type="hidden"
-																name="returnTo"
-																value="/staff/live"
-															/>
-															<button
-																class="queue-edit-link"
-																type="submit"
-																>Open session</button
-															>
-														</form>
+				{#if queue.sessionState === null && queue.scheduleEnabled !== 1 && queue.isActive === 1 && queue.locationIsActive === 1 && queue.serviceIsActive === 1}
+					<a class="queue-edit-link" href={`/staff/queues/${encodeURIComponent(queue.id)}?organization=${encodeURIComponent(data.organization.organizationId)}&session=1`}>Configure session</a>
 													{/if}
+								{#if queue.sessionState === null && queue.scheduleEnabled === 1}
+									<small class="queue-live-state">A recurring schedule opens this session automatically.</small>
+								{/if}
 													{#if queue.sessionState === null && (queue.isActive !== 1 || queue.locationIsActive !== 1 || queue.serviceIsActive !== 1)}
 														<small
 															class="queue-live-state"

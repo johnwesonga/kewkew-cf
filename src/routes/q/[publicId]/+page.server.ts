@@ -31,11 +31,13 @@ export const load: PageServerLoad = async ({ params, cookies, setHeaders }) => {
 		organizationName: organizations.name,
 		locationName: locations.name,
 		serviceName: services.name,
+		timezone: locations.timezone,
 		queueIsActive: queues.isActive,
 		locationIsActive: locations.isActive,
 		serviceIsActive: services.isActive,
 		sessionState: queueSessions.state,
 		sessionId: queueSessions.id,
+		scheduledServiceStartAt: queueSessions.scheduledServiceStartAt,
 		activeTicketCount: sql<number>`(
 			SELECT COUNT(*) FROM tickets
 			WHERE tickets.queue_session_id = ${queueSessions.id}
@@ -102,7 +104,7 @@ export const load: PageServerLoad = async ({ params, cookies, setHeaders }) => {
 	}));
 	const attemptToken = generateCredential();
 	return {
-		queue: { publicId: queue.publicId, name: queue.name, organizationName: queue.organizationName, locationName: queue.locationName, serviceName: queue.serviceName },
+		queue: { publicId: queue.publicId, name: queue.name, organizationName: queue.organizationName, locationName: queue.locationName, serviceName: queue.serviceName, timezone: queue.timezone, scheduledServiceStartAt: queue.scheduledServiceStartAt },
 		identityPolicy: queue.identityPolicy,
 		signupAvailable,
 		unavailableReason,

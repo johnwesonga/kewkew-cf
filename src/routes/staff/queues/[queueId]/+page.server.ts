@@ -4,7 +4,7 @@ import type { Actions, PageServerLoad } from './$types';
 import { and, asc, count, eq, exists, sql } from 'drizzle-orm';
 import { createDatabase } from '#lib/server/database';
 import { validateQueueConfiguration } from '#lib/server/queue-rules';
-import { locations, organizationMemberships, organizations, queues, services } from '#lib/server/schema';
+import { locations, membershipLocationAccess, organizationMemberships, organizations, queueSessions, queues, services } from '#lib/server/schema';
 
 export const load: PageServerLoad = async ({ locals, params, url }) => {
 	if (!locals.user) redirect(303, '/staff/sign-in');
@@ -12,13 +12,13 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 	const db = createDatabase((cloudflareEnv as Env).DB);
 	const memberships = await db.select({
 		organizationId: organizations.id,
-		organizationName: organizations.name
+		organizationName: organizations.name,
+		role: organizationMemberships.role
 	})
 		.from(organizationMemberships)
 		.innerJoin(organizations, eq(organizations.id, organizationMemberships.organizationId))
 		.where(and(
 			eq(organizationMemberships.userId, userId),
-			eq(organizationMemberships.role, 'admin'),
 			eq(organizationMemberships.status, 'active')
 		))
 		.orderBy(asc(sql`lower(${organizations.name})`), asc(organizations.id));
@@ -30,15 +30,22 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 		: memberships[0];
 	if (!organization) error(404, 'Queue not found');
 
-	const [queue, locationCount] = await Promise.all([
+	const [queue, adminLocationCount, assignedLocationCount] = await Promise.all([
 		db.select({
 			id: queues.id,
 			publicId: queues.publicId,
 			name: queues.name,
 			locationName: locations.name,
+			timezone: locations.timezone,
 			serviceName: services.name,
 			identityPolicy: queues.identityPolicy,
-			activeTicketCapacity: queues.activeTicketCapacity
+			activeTicketCapacity: queues.activeTicketCapacity,
+			isActive: queues.isActive,
+			locationIsActive: locations.isActive,
+			serviceIsActive: services.isActive,
+			scheduleEnabled: sql<number>`COALESCE((SELECT enabled FROM queue_schedules WHERE queue_id = ${queues.id}), 0)`,
+			sessionId: queueSessions.id,
+			sessionState: queueSessions.state
 		})
 			.from(queues)
 			.innerJoin(locations, and(
@@ -50,28 +57,49 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 				eq(services.id, queues.serviceId),
 				eq(services.locationId, queues.locationId)
 			))
+			.leftJoin(queueSessions, and(
+				eq(queueSessions.organizationId, queues.organizationId),
+				eq(queueSessions.queueId, queues.id),
+				sql`${queueSessions.state} IN ('open', 'paused')`
+			))
 			.where(and(
 				eq(queues.id, params.queueId),
 				eq(queues.organizationId, organization.organizationId),
-				exists(db.select({ userId: organizationMemberships.userId }).from(organizationMemberships).where(and(
-					eq(organizationMemberships.organizationId, queues.organizationId),
-					eq(organizationMemberships.userId, userId),
-					eq(organizationMemberships.role, 'admin'),
-					eq(organizationMemberships.status, 'active')
-				)))
+				organization.role === 'admin'
+					? exists(db.select({ userId: organizationMemberships.userId }).from(organizationMemberships).where(and(
+						eq(organizationMemberships.organizationId, queues.organizationId),
+						eq(organizationMemberships.userId, userId),
+						eq(organizationMemberships.role, 'admin'),
+						eq(organizationMemberships.status, 'active')
+					)))
+					: exists(db.select({ locationId: membershipLocationAccess.locationId }).from(membershipLocationAccess)
+						.innerJoin(organizationMemberships, and(
+							eq(organizationMemberships.organizationId, membershipLocationAccess.organizationId),
+							eq(organizationMemberships.userId, membershipLocationAccess.userId)
+						))
+						.where(and(
+							eq(membershipLocationAccess.organizationId, queues.organizationId),
+							eq(membershipLocationAccess.locationId, queues.locationId),
+							eq(membershipLocationAccess.userId, userId),
+							eq(organizationMemberships.role, 'operator'),
+							eq(organizationMemberships.status, 'active')
+						)))
 			))
 			.get(),
-		db.select({ value: count() }).from(locations)
-			.where(eq(locations.organizationId, organization.organizationId))
+		db.select({ value: count() }).from(locations).where(eq(locations.organizationId, organization.organizationId)),
+		db.select({ value: count() }).from(membershipLocationAccess)
+			.where(and(eq(membershipLocationAccess.organizationId, organization.organizationId), eq(membershipLocationAccess.userId, userId)))
 	]);
 	if (!queue) error(404, 'Queue not found');
 
+	const membership = memberships.find((item) => item.organizationId === organization.organizationId)!;
 	return {
 		user: { name: locals.user.name, email: locals.user.email },
-		organization,
+		organization: { ...organization, role: membership.role },
 		organizations: memberships,
-		locationCount: locationCount[0]?.value ?? 0,
-		queue
+		locationCount: membership.role === 'admin' ? adminLocationCount[0]?.value ?? 0 : assignedLocationCount[0]?.value ?? 0,
+		queue,
+		openRequestId: queue.sessionId ? null : crypto.randomUUID()
 	};
 };
 

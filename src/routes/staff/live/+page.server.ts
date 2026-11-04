@@ -65,6 +65,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			serviceIsActive: services.isActive,
 			name: queues.name,
 			isActive: queues.isActive,
+			scheduleEnabled: sql<number>`COALESCE((SELECT enabled FROM queue_schedules WHERE queue_id = ${queues.id}), 0)`,
 			sessionId: queueSessions.id,
 			sessionState: queueSessions.state
 		})
@@ -123,7 +124,6 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		locationCount: locationCountRows[0]?.value ?? 0,
 		queues: queueRows.map((queue) => ({
 			...queue,
-			openRequestId: queue.sessionId ? null : crypto.randomUUID(),
 			transitionRequestId: queue.sessionId ? crypto.randomUUID() : null
 		})),
 		opened: url.searchParams.get('opened') === '1',

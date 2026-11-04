@@ -1271,7 +1271,48 @@ select {
 .queue-row-actions {
 	display: flex;
 	align-items: center;
+	flex-wrap: wrap;
 	gap: 8px;
+}
+
+.manual-session-time-field {
+	display: grid;
+	gap: 4px;
+	color: var(--muted);
+	font-size: 9px;
+	font-weight: 650;
+}
+
+.manual-session-time-field input {
+	width: 100%;
+	min-height: 44px;
+	padding: 0 12px;
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	background: var(--paper);
+	color: var(--ink);
+	font: inherit;
+	font-size: 12px;
+}
+
+.manual-session-config-form {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 18px;
+}
+
+.manual-session-config-card {
+	max-width: 680px;
+	padding: 22px;
+}
+
+.manual-session-config-form .queue-edit-context,
+.manual-session-config-form .queue-edit-actions {
+	grid-column: 1 / -1;
+}
+
+.manual-session-config-form .queue-edit-context {
+	margin: 0;
 }
 
 .queue-board-controls {
@@ -1757,6 +1798,27 @@ select {
 	margin: 0;
 	color: var(--muted);
 	font-size: 14px;
+}
+
+.public-scheduled-start {
+	display: grid;
+	gap: 4px;
+	margin: 18px 0 0;
+	padding: 12px 14px;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	background: var(--canvas);
+}
+
+.public-scheduled-start strong {
+	color: var(--green-dark);
+	font-size: 11px;
+}
+
+.public-scheduled-start span {
+	color: var(--ink);
+	font-size: 12px;
+	line-height: 1.5;
 }
 
 .public-queue-state {

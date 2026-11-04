@@ -71,7 +71,7 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 
 	const [locationCountRows, activeSession] = await Promise.all([
 		db.select({ value: count() }).from(locations).where(eq(locations.organizationId, organization.organizationId)),
-		db.select({ id: queueSessions.id, state: queueSessions.state, scheduledServiceStartAt: queueSessions.scheduledServiceStartAt })
+		db.select({ id: queueSessions.id, state: queueSessions.state, scheduleId: queueSessions.scheduleId, scheduledServiceStartAt: queueSessions.scheduledServiceStartAt })
 			.from(queueSessions)
 			.where(and(
 				eq(queueSessions.organizationId, organization.organizationId),
@@ -80,7 +80,7 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 			))
 			.get()
 	]);
-	const session = activeSession ?? await db.select({ id: queueSessions.id, state: queueSessions.state, scheduledServiceStartAt: queueSessions.scheduledServiceStartAt })
+	const session = activeSession ?? await db.select({ id: queueSessions.id, state: queueSessions.state, scheduleId: queueSessions.scheduleId, scheduledServiceStartAt: queueSessions.scheduledServiceStartAt })
 		.from(queueSessions)
 		.where(and(eq(queueSessions.organizationId, organization.organizationId), eq(queueSessions.queueId, queue.id)))
 		.orderBy(desc(queueSessions.openedAt), desc(queueSessions.id))
@@ -148,7 +148,7 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 			canRecall: canRecallTicket(ticket.status),
 			recallRequestId: canRecallTicket(ticket.status) ? crypto.randomUUID() : null
 		})),
-		canCallNext: canCallNext(session?.state ?? null, board.tickets, activeSession?.scheduledServiceStartAt ?? null),
+		canCallNext: canCallNext(session?.state ?? null, board.tickets, activeSession?.scheduledServiceStartAt ?? null, Date.now(), activeSession?.scheduleId !== null && activeSession?.scheduleId !== undefined),
 		callRequestId: activeSession ? crypto.randomUUID() : null,
 		calledTicket: url.searchParams.get('called'),
 		replayedCall: url.searchParams.get('replayed') === '1',
@@ -242,6 +242,7 @@ export const actions: Actions = {
 			))
 			.get();
 		if (!activeSession) return invalid('This session is no longer active. Refresh the board and try again.', 409);
+		const now = new Date().toISOString();
 
 		const operatorAssignment = exists(db.select({ locationId: membershipLocationAccess.locationId })
 			.from(membershipLocationAccess)
@@ -272,7 +273,6 @@ export const actions: Actions = {
 				eq(organizationMemberships.status, 'active')
 			)));
 		const canOperateQueue = membership.role === 'admin' ? activeAdmin : operatorAssignment;
-		const now = new Date().toISOString();
 		const candidate = db.select({ id: tickets.id })
 			.from(tickets)
 			.innerJoin(queueSessions, and(
@@ -291,7 +291,6 @@ export const actions: Actions = {
 				eq(tickets.queueSessionId, activeSession.id),
 				eq(tickets.status, 'serving'),
 				inArray(queueSessions.state, ['open', 'paused']),
-				sql`${queueSessions.scheduleId} IS NULL OR ${queueSessions.scheduledServiceStartAt} <= ${now}`,
 				authorizedMembership,
 				canOperateQueue,
 				not(exists(db.select({ id: tickets.id }).from(tickets).where(eq(tickets.transitionRequestId, requestId))))
@@ -1011,6 +1010,7 @@ export const actions: Actions = {
 			))
 			.get();
 		if (!activeSession) return fail(409, { message: 'This session is no longer active. Refresh the board and try again.' });
+		const now = new Date().toISOString();
 
 		const operatorAssignment = exists(db.select({ locationId: membershipLocationAccess.locationId })
 			.from(membershipLocationAccess)
@@ -1058,6 +1058,7 @@ export const actions: Actions = {
 				eq(tickets.queueSessionId, activeSession.id),
 				eq(tickets.status, 'waiting'),
 				inArray(queueSessions.state, ['open', 'paused']),
+				sql`${queueSessions.scheduleId} IS NULL OR ${queueSessions.scheduledServiceStartAt} <= ${now}`,
 				authorizedMembership,
 				canOperateQueue,
 				not(exists(db.select({ id: tickets.id }).from(tickets).where(eq(tickets.transitionRequestId, requestId))))
@@ -1065,7 +1066,6 @@ export const actions: Actions = {
 			.orderBy(asc(tickets.queueSequence), asc(tickets.id))
 			.limit(1);
 
-		const now = new Date().toISOString();
 		const update = db.update(tickets).set({
 			status: 'called',
 			calledAt: now,
