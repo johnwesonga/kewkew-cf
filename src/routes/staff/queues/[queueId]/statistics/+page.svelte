@@ -65,10 +65,10 @@
 					<form class="statistics-range-form" method="GET" action={`/staff/queues/${encodeURIComponent(data.queue.id)}/statistics`}>
 						<input type="hidden" name="organization" value={data.organization.organizationId} />
 						<label for="statistics-range">Time range</label>
-						<select id="statistics-range" name="range" value={data.range}>
-							<option value="7">Last 7 days</option>
-							<option value="30">Last 30 days</option>
-							<option value="90">Last 90 days</option>
+						<select id="statistics-range" name="range">
+							<option value="7" selected={data.range === 7}>Last 7 days</option>
+							<option value="30" selected={data.range === 30}>Last 30 days</option>
+							<option value="90" selected={data.range === 90}>Last 90 days</option>
 						</select>
 						<button type="submit">Apply</button>
 					</form>
