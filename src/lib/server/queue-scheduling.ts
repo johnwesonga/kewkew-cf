@@ -105,6 +105,32 @@ export function occurrenceIsDue(signupOpensAt: string, now: string): boolean {
 	return Number.isFinite(Date.parse(signupOpensAt)) && Date.parse(signupOpensAt) <= Date.parse(now);
 }
 
+export function nextScheduledOccurrence(
+	now: number,
+	timezone: string,
+	weekdays: readonly number[],
+	signupOpenTime: string,
+	serviceStartTime: string
+): { occurrenceKey: string; signupOpensAt: string; scheduledServiceStartAt: string } | null {
+	if (!isValidIanaTimezone(timezone) || weekdays.length === 0) return null;
+	const current = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+		timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit'
+	}).formatToParts(new Date(now)).map(({ type, value }) => [type, value]));
+	const today = `${current.year}-${current.month}-${current.day}`;
+	const [year, month, day] = today.split('-').map(Number);
+	for (let offset = 0; offset <= 7; offset += 1) {
+		const date = new Date(Date.UTC(year!, month! - 1, day! + offset));
+		const occurrenceKey = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+		if (!weekdays.includes(date.getUTCDay())) continue;
+		const signupOpensAt = localDateTimeToUtc(occurrenceKey, signupOpenTime, timezone);
+		const scheduledServiceStartAt = localDateTimeToUtc(occurrenceKey, serviceStartTime, timezone);
+		if (signupOpensAt && scheduledServiceStartAt && Date.parse(scheduledServiceStartAt) >= now) {
+			return { occurrenceKey, signupOpensAt, scheduledServiceStartAt };
+		}
+	}
+	return null;
+}
+
 export function hasOccurrenceCapacity(cap: number | null, issuedCount: number): boolean {
 	return cap === null || issuedCount < cap;
 }

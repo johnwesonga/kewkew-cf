@@ -76,7 +76,7 @@ Related stories: [admin queue configuration](admin-queue-configuration-user-stor
 
 ## VF-11: See when queue service is scheduled to begin
 
-**Status** — Planned
+**Status** — Implemented in the Cloudflare rebuild
 
 **User story** — As a visitor considering or joining a scheduled queue, I want to see when service is scheduled to begin so I can decide whether to join and when to arrive.
 
@@ -89,6 +89,15 @@ Related stories: [admin queue configuration](admin-queue-configuration-user-stor
 - A stale page cannot create a ticket for an occurrence that has closed or reached its cap; the visitor receives a clear unavailable message.
 
 **Dependencies** — AQ-9; VF-1, VF-2, VF-4, VF-5, VF-6, and VF-7.
+
+**Cloudflare implementation note** — Public queue pages show the active occurrence's persisted
+service-start time, or preview the next configured occurrence when signup has not opened yet. The
+opening time is shown in the location timezone. Scheduled signup forms carry the occurrence date,
+and the server conditionally accepts the join only for that same occurrence, so a stale page cannot
+join a later session. Occurrence capacity remains enforced against all tickets issued for that
+session, and public messaging reports that signup is full without disclosing the configured cap.
+The private ticket page continues to display the service-start timestamp persisted on its session,
+so later schedule edits do not alter an existing ticket's information.
 
 ## Initial policy decisions
 

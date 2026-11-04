@@ -27,6 +27,9 @@
 		{#if data.queue.scheduledServiceStartAt}
 			<p class="public-scheduled-start"><strong>Scheduled service start</strong><span>{formatScheduledStart(data.queue.scheduledServiceStartAt, data.queue.timezone)} · {data.queue.timezone}</span></p>
 		{/if}
+		{#if data.signupNotOpen && data.queue.signupOpensAt}
+			<p class="public-scheduled-start public-signup-opens"><strong>Signup opens</strong><span>{formatScheduledStart(data.queue.signupOpensAt, data.queue.timezone)} · {data.queue.timezone}</span></p>
+		{/if}
 		{#if data.signupAvailable}
 			<div class="public-queue-state available" role="status">
 				<span aria-hidden="true"></span>
@@ -47,6 +50,10 @@
 						<p>Signup is paused while staff manage the line. Please check back later.</p>
 					{:else if data.unavailableReason === "queue_full"}
 						<p>This queue has reached its current capacity. Please check with staff for your next step.</p>
+					{:else if data.unavailableReason === "occurrence_full"}
+						<p>This scheduled signup is full. Please check with staff for your next step.</p>
+					{:else if data.unavailableReason === "signup_not_open"}
+						<p>Signup is not open yet. Check the opening time above and return then.</p>
 					{:else}
 						<p>This queue does not have an open signup session right now.</p>
 					{/if}
@@ -57,6 +64,7 @@
 			{#if data.signupAvailable}
 				<form method="POST" action="?/join" class="public-join-form">
 					<input type="hidden" name="attemptToken" value={form?.attemptToken ?? data.attemptToken} />
+					<input type="hidden" name="expectedOccurrenceKey" value={data.queue.occurrenceKey ?? ""} />
 					<button type="submit">Join this queue</button>
 					{#if form?.joinMessage}<p class="public-join-error" role="alert">{form.joinMessage}</p>{/if}
 				</form>
@@ -67,6 +75,7 @@
 			{#if data.signupAvailable}
 				<form method="POST" action="?/join" class="public-join-form public-join-name-form">
 					<input type="hidden" name="attemptToken" value={form?.attemptToken ?? data.attemptToken} />
+					<input type="hidden" name="expectedOccurrenceKey" value={data.queue.occurrenceKey ?? ""} />
 					<label for="visitor-first-name">First name</label>
 					<input id="visitor-first-name" name="firstName" type="text" autocomplete="given-name" maxlength="100" required value={form?.firstName ?? ""} aria-invalid={form?.fieldErrors?.firstName ? "true" : undefined} aria-describedby={form?.fieldErrors?.firstName ? "visitor-first-name-error" : undefined} />
 					{#if form?.fieldErrors?.firstName}<span id="visitor-first-name-error" class="public-join-error" role="alert">{form.fieldErrors.firstName}</span>{/if}

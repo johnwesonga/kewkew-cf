@@ -82,9 +82,9 @@ export async function findOrCreateTrackingCredential(
 
 export async function joinVisitorQueue(
 	db: ReturnType<typeof createDatabase>,
-	args: { publicId: string; attemptToken: string; browserDigest?: string; firstName?: string; lastName?: string }
+	args: { publicId: string; attemptToken: string; expectedOccurrenceKey: string | null; browserDigest?: string; firstName?: string; lastName?: string }
 ): Promise<'created_or_replayed' | 'browser_already_joined' | 'name_required' | 'unavailable' | 'full' | 'failed'> {
-	const { publicId, attemptToken, browserDigest } = args;
+	const { publicId, attemptToken, expectedOccurrenceKey, browserDigest } = args;
 	const attemptDigest = await digestCredential(attemptToken);
 	const firstName = args.firstName?.trim() || null;
 	const lastName = args.lastName?.trim() || null;
@@ -138,6 +138,7 @@ export async function joinVisitorQueue(
 	const now = new Date().toISOString();
 	const updateConditions = [
 		eq(queueSessions.state, 'open'),
+		expectedOccurrenceKey === null ? isNull(queueSessions.occurrenceKey) : eq(queueSessions.occurrenceKey, expectedOccurrenceKey),
 		or(isNull(queueSessions.signupOpensAt), sql`${queueSessions.signupOpensAt} <= ${now}`)!,
 		sql`(${queueSessions.occurrenceTicketCap} IS NULL OR (SELECT count(*) FROM tickets issued WHERE issued.queue_session_id = ${queueSessions.id}) < ${queueSessions.occurrenceTicketCap})`,
 		eligibleQueue,
@@ -175,6 +176,7 @@ export async function joinVisitorQueue(
 		transitionRequestId: sql<null>`NULL`.as('transition_request_id')
 	}).from(queueSessions).where(and(
 		eq(queueSessions.state, 'open'),
+		expectedOccurrenceKey === null ? isNull(queueSessions.occurrenceKey) : eq(queueSessions.occurrenceKey, expectedOccurrenceKey),
 		eq(queueSessions.lastJoinAttemptDigest, attemptDigest)
 	))).onConflictDoNothing();
 	const initialEvent = db.insert(ticketEvents).select(db.select({
@@ -242,7 +244,8 @@ export async function joinVisitorQueue(
 	const state = await getJoinState(db, publicId);
 	if (!state) return 'unavailable';
 	if (state.identityPolicy === 'name_required' && (!firstName || !lastName)) return 'name_required';
-	if (state.queueActive !== 1 || state.locationActive !== 1 || state.serviceActive !== 1 || state.sessionState !== 'open') return 'unavailable';
+	if (state.queueActive !== 1 || state.locationActive !== 1 || state.serviceActive !== 1 || state.sessionState !== 'open'
+		|| state.occurrenceKey !== expectedOccurrenceKey) return 'unavailable';
 	if ((state.activeTicketCapacity !== null && state.activeTicketCount >= state.activeTicketCapacity)
 		|| (state.occurrenceTicketCap !== null && state.occurrenceTicketCount >= state.occurrenceTicketCap)) return 'full';
 	return 'failed';
@@ -321,6 +324,7 @@ export async function cancelTrackedTicket(
 export async function getJoinState(db: ReturnType<typeof createDatabase>, publicId: string) {
 	const state = await db.select({
 		identityPolicy: queues.identityPolicy,
+		occurrenceKey: queueSessions.occurrenceKey,
 		queueActive: queues.isActive,
 		locationActive: locations.isActive,
 		serviceActive: services.isActive,

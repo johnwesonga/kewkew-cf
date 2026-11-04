@@ -6,7 +6,8 @@ import { createDatabase } from '#lib/server/database';
 import { getJoinState, joinVisitorQueue, findActiveBrowserTicket, findOrCreateTrackingCredential } from '#lib/server/visitor-join';
 import { digestCredential, generateCredential, isValidCredential } from '#lib/server/visitor-credential';
 import { validateVisitorIdentity } from '#lib/server/visitor-validation';
-import { locations, organizations, queueSessions, queues, services, tickets } from '#lib/server/schema';
+import { nextScheduledOccurrence } from '#lib/server/queue-scheduling';
+import { locations, organizations, queueSchedules, queueSessions, queues, services, tickets } from '#lib/server/schema';
 
 const duplicatePreventionEnabled = !(import.meta.env.DEV && (process.env.BROWSER_DUPLICATE_SIGNUP_PREVENTION ?? 'true') === 'false');
 const browserCookie = 'kewkew_browser';
@@ -37,7 +38,14 @@ export const load: PageServerLoad = async ({ params, cookies, setHeaders }) => {
 		serviceIsActive: services.isActive,
 		sessionState: queueSessions.state,
 		sessionId: queueSessions.id,
+		occurrenceKey: queueSessions.occurrenceKey,
+		signupOpensAt: queueSessions.signupOpensAt,
 		scheduledServiceStartAt: queueSessions.scheduledServiceStartAt,
+		occurrenceTicketCap: queueSessions.occurrenceTicketCap,
+		occurrenceTicketCount: sql<number>`(
+			SELECT COUNT(*) FROM tickets issued
+			WHERE issued.queue_session_id = ${queueSessions.id}
+		)`,
 		activeTicketCount: sql<number>`(
 			SELECT COUNT(*) FROM tickets
 			WHERE tickets.queue_session_id = ${queueSessions.id}
@@ -52,6 +60,34 @@ export const load: PageServerLoad = async ({ params, cookies, setHeaders }) => {
 		.where(eq(queues.publicId, params.publicId.toLowerCase()))
 		.get();
 	if (!queue) redirect(303, '/q/unavailable');
+	const schedule = await db.select({
+		enabled: queueSchedules.enabled,
+		weekdays: queueSchedules.weekdays,
+		signupOpenTime: queueSchedules.signupOpenTime,
+		serviceStartTime: queueSchedules.serviceStartTime
+	})
+		.from(queueSchedules)
+		.where(and(
+			eq(queueSchedules.organizationId, queue.organizationId),
+			eq(queueSchedules.queueId, queue.id),
+			eq(queueSchedules.enabled, 1)
+		))
+		.get();
+	const now = Date.now();
+	let nextOccurrence: ReturnType<typeof nextScheduledOccurrence> = null;
+	if (!queue.sessionId && schedule) {
+		try {
+			const weekdays: unknown = JSON.parse(schedule.weekdays);
+			if (Array.isArray(weekdays) && weekdays.every((day) => Number.isInteger(day) && day >= 0 && day <= 6)) {
+				nextOccurrence = nextScheduledOccurrence(now, queue.timezone, weekdays, schedule.signupOpenTime, schedule.serviceStartTime);
+			}
+		} catch {
+			// Ignore malformed schedule data in the public view; it cannot be joined without an open session.
+		}
+	}
+	const occurrenceKey = queue.occurrenceKey ?? nextOccurrence?.occurrenceKey ?? null;
+	const signupOpensAt = queue.signupOpensAt ?? nextOccurrence?.signupOpensAt ?? null;
+	const scheduledServiceStartAt = queue.scheduledServiceStartAt ?? nextOccurrence?.scheduledServiceStartAt ?? null;
 
 	const choices = await db.select({
 		publicId: queues.publicId,
@@ -89,13 +125,17 @@ export const load: PageServerLoad = async ({ params, cookies, setHeaders }) => {
 	}
 
 	const atCapacity = queue.activeTicketCapacity !== null && queue.activeTicketCount >= queue.activeTicketCapacity;
-	const signupAvailable = queue.queueIsActive === 1 && queue.locationIsActive === 1 && queue.serviceIsActive === 1 && queue.sessionState === 'open' && !atCapacity;
+	const occurrenceFull = queue.occurrenceTicketCap !== null && queue.occurrenceTicketCount >= queue.occurrenceTicketCap;
+	const signupNotOpen = signupOpensAt !== null && Date.parse(signupOpensAt) > now;
+	const signupAvailable = queue.queueIsActive === 1 && queue.locationIsActive === 1 && queue.serviceIsActive === 1 && queue.sessionState === 'open' && !atCapacity && !occurrenceFull && !signupNotOpen;
 	const unavailableReason = signupAvailable ? null
 		: atCapacity ? 'queue_full'
+			: occurrenceFull ? 'occurrence_full'
 			: queue.queueIsActive !== 1 ? 'queue_inactive'
 				: queue.locationIsActive !== 1 ? 'location_inactive'
 					: queue.serviceIsActive !== 1 ? 'service_inactive'
-						: queue.sessionState === 'paused' ? 'session_paused' : 'session_not_open';
+						: queue.sessionState === 'paused' ? 'session_paused'
+							: signupNotOpen ? 'signup_not_open' : 'session_not_open';
 	const serviceChoices = choices.map((choice) => ({
 		publicId: choice.publicId,
 		queueName: choice.queueName,
@@ -104,7 +144,8 @@ export const load: PageServerLoad = async ({ params, cookies, setHeaders }) => {
 	}));
 	const attemptToken = generateCredential();
 	return {
-		queue: { publicId: queue.publicId, name: queue.name, organizationName: queue.organizationName, locationName: queue.locationName, serviceName: queue.serviceName, timezone: queue.timezone, scheduledServiceStartAt: queue.scheduledServiceStartAt },
+		queue: { publicId: queue.publicId, name: queue.name, organizationName: queue.organizationName, locationName: queue.locationName, serviceName: queue.serviceName, timezone: queue.timezone, occurrenceKey, signupOpensAt, scheduledServiceStartAt },
+		signupNotOpen,
 		identityPolicy: queue.identityPolicy,
 		signupAvailable,
 		unavailableReason,
@@ -129,6 +170,10 @@ export const actions: Actions = {
 		});
 		const formData = await request.formData();
 		const attemptToken = String(formData.get('attemptToken') ?? '');
+		const occurrenceKeyInput = String(formData.get('expectedOccurrenceKey') ?? '');
+		if (occurrenceKeyInput && !/^\d{4}-\d{2}-\d{2}$/.test(occurrenceKeyInput)) {
+			return formError(400, 'Refresh this page and try again.', attemptToken || generateCredential());
+		}
 		if (!isValidCredential(attemptToken)) return formError(400, 'Refresh this page and try again.', generateCredential());
 		const db = createDatabase((cloudflareEnv as Env).DB);
 		const state = await getJoinState(db, params.publicId.toLowerCase());
@@ -149,7 +194,9 @@ export const actions: Actions = {
 		}
 		const browserDigest = browserToken ? await digestCredential(browserToken) : undefined;
 		const result = await joinVisitorQueue(db, {
-			publicId: params.publicId.toLowerCase(), attemptToken, browserDigest,
+			publicId: params.publicId.toLowerCase(), attemptToken,
+			expectedOccurrenceKey: occurrenceKeyInput || null,
+			browserDigest,
 			firstName: identity.firstName ?? undefined,
 			lastName: identity.lastName ?? undefined
 		});
@@ -166,8 +213,8 @@ export const actions: Actions = {
 		}
 		const messages = {
 			name_required: 'Enter both your first and last name.',
-			unavailable: 'This queue is no longer accepting visitors. Please check with staff.',
-			full: 'This queue has reached capacity. Please check with staff for your next step.',
+			unavailable: 'This signup is no longer available. The scheduled occurrence may have closed. Refresh the page or check with staff.',
+			full: 'This queue or scheduled occurrence is full. Please check with staff for your next step.',
 			failed: 'We could not complete your signup. Refresh the page and try again.'
 		};
 		return formError(result === 'failed' ? 500 : 409, messages[result], attemptToken, { firstName: rawFirstName, lastName: rawLastName });

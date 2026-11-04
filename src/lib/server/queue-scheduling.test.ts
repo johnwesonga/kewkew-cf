@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hasOccurrenceCapacity, localDateTimeToUtc, occurrenceIsDue, occurrenceKey, validateQueueSchedule } from './queue-scheduling';
+import { hasOccurrenceCapacity, localDateTimeToUtc, nextScheduledOccurrence, occurrenceIsDue, occurrenceKey, validateQueueSchedule } from './queue-scheduling';
 
 const base = { weekdays: [1, 3, 5], signupOpenTime: '09:00', serviceStartTime: '10:00', occurrenceTicketCap: '', timezone: 'America/Los_Angeles' };
 
@@ -39,6 +39,21 @@ describe('occurrence scheduling helpers', () => {
 	it('opens only when the persisted opening timestamp has passed', () => {
 		expect(occurrenceIsDue('2026-01-05T17:00:00.000Z', '2026-01-05T17:00:00.000Z')).toBe(true);
 		expect(occurrenceIsDue('2026-01-05T17:00:00.000Z', '2026-01-05T16:59:59.999Z')).toBe(false);
+	});
+	it('previews today when service has not started and retains the timezone-local opening time', () => {
+		expect(nextScheduledOccurrence(Date.parse('2026-01-05T16:00:00.000Z'), 'America/Los_Angeles', [1], '09:00', '10:00')).toEqual({
+			occurrenceKey: '2026-01-05',
+			signupOpensAt: '2026-01-05T17:00:00.000Z',
+			scheduledServiceStartAt: '2026-01-05T18:00:00.000Z'
+		});
+	});
+	it('advances to the next configured weekday after today’s service start', () => {
+		expect(nextScheduledOccurrence(Date.parse('2026-01-05T19:00:00.000Z'), 'America/Los_Angeles', [1], '09:00', '10:00')?.occurrenceKey)
+			.toBe('2026-01-12');
+	});
+	it('resolves a preview using daylight-saving rules for the occurrence date', () => {
+		expect(nextScheduledOccurrence(Date.parse('2026-03-08T07:00:00.000Z'), 'America/Los_Angeles', [0], '01:30', '02:30'))
+			.toMatchObject({ scheduledServiceStartAt: '2026-03-08T10:00:00.000Z' });
 	});
 	it('does not replenish an occurrence cap for terminal tickets', () => {
 		expect(hasOccurrenceCapacity(3, 2)).toBe(true);
