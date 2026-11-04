@@ -1341,15 +1341,29 @@ select {
 	padding: 7px 10px;
 	border: 1px solid var(--line);
 	border-radius: 8px;
-	background: white;
-	color: var(--green-dark);
+	background: var(--paper);
+	color: var(--ink);
 	font: inherit;
 	font-size: 12px;
 }
 
 .statistics-range-form button {
+	border-color: var(--green);
+	background: var(--green);
+	color: #fff;
 	font-weight: 750;
 	cursor: pointer;
+}
+
+.statistics-range-form button:hover {
+	background: var(--green-dark);
+	border-color: var(--green-dark);
+}
+
+.statistics-range-form select:focus-visible,
+.statistics-range-form button:focus-visible {
+	outline: 3px solid var(--lime);
+	outline-offset: 2px;
 }
 
 .statistics-summary {
