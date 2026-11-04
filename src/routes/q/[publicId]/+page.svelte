@@ -4,7 +4,8 @@
 	let { data, form }: PageProps = $props();
 	function formatScheduledStart(timestamp: string, timezone: string): string {
 		return new Intl.DateTimeFormat(undefined, {
-			weekday: 'long', dateStyle: 'medium', timeStyle: 'short', timeZone: timezone
+			weekday: 'long', year: 'numeric', month: 'short', day: 'numeric',
+			hour: 'numeric', minute: '2-digit', timeZone: timezone
 		}).format(new Date(timestamp));
 	}
 </script>
