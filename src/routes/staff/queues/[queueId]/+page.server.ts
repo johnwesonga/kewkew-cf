@@ -1,9 +1,9 @@
 import { env as cloudflareEnv } from 'cloudflare:workers';
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { and, asc, count, eq, exists, sql } from 'drizzle-orm';
+import { and, asc, count, eq, exists, not, sql } from 'drizzle-orm';
 import { createDatabase } from '#lib/server/database';
-import { validateQueueConfiguration } from '#lib/server/queue-rules';
+import { resolveQueueDeletion, validateQueueConfiguration } from '#lib/server/queue-rules';
 import { locations, membershipLocationAccess, organizationMemberships, organizations, queueSessions, queues, services } from '#lib/server/schema';
 
 export const load: PageServerLoad = async ({ locals, params, url }) => {
@@ -104,6 +104,57 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 };
 
 export const actions: Actions = {
+	deleteQueue: async ({ locals, params, request, url }) => {
+		if (!locals.user) redirect(303, '/staff/sign-in');
+		const form = await request.formData();
+		const organizationId = url.searchParams.get('organization') ?? '';
+		if (!organizationId) error(404, 'Queue not found');
+		const confirmation = resolveQueueDeletion(form.get('confirmDeletion') === 'yes', false);
+		if (!confirmation.allowed && confirmation.reason === 'confirmation_required') {
+			return fail(400, { message: 'Confirm that you want to delete this queue.' });
+		}
+
+		const db = createDatabase((cloudflareEnv as Env).DB);
+		const deleted = await db.delete(queues).where(and(
+			eq(queues.id, params.queueId),
+			eq(queues.organizationId, organizationId),
+			exists(db.select({ userId: organizationMemberships.userId }).from(organizationMemberships).where(and(
+				eq(organizationMemberships.organizationId, queues.organizationId),
+				eq(organizationMemberships.userId, locals.user.id),
+				eq(organizationMemberships.role, 'admin'),
+				eq(organizationMemberships.status, 'active')
+			))),
+			not(exists(db.select({ id: queueSessions.id }).from(queueSessions).where(and(
+				eq(queueSessions.organizationId, queues.organizationId),
+				eq(queueSessions.queueId, queues.id)
+			))))
+		)).run();
+
+		if (deleted.meta.changes !== 1) {
+			const authorizedQueue = await db.select({ id: queues.id }).from(queues).where(and(
+				eq(queues.id, params.queueId),
+				eq(queues.organizationId, organizationId),
+				exists(db.select({ userId: organizationMemberships.userId }).from(organizationMemberships).where(and(
+					eq(organizationMemberships.organizationId, queues.organizationId),
+					eq(organizationMemberships.userId, locals.user.id),
+					eq(organizationMemberships.role, 'admin'),
+					eq(organizationMemberships.status, 'active')
+				)))
+			)).get();
+			if (!authorizedQueue) error(404, 'Queue not found');
+			const sessionHistory = await db.select({ id: queueSessions.id }).from(queueSessions).where(and(
+				eq(queueSessions.organizationId, organizationId),
+				eq(queueSessions.queueId, params.queueId)
+			)).limit(1).get();
+			const deletion = resolveQueueDeletion(true, Boolean(sessionHistory));
+			if (!deletion.allowed && deletion.reason === 'session_history') {
+				return fail(409, { message: 'This queue has session history and cannot be deleted. Deactivate it instead.' });
+			}
+			return fail(409, { message: 'The queue changed before it could be deleted. Refresh the page and try again.' });
+		}
+
+		redirect(303, `/staff/queues?organization=${encodeURIComponent(organizationId)}&deleted=1`);
+	},
 	updateQueue: async ({ locals, params, request, url }) => {
 		if (!locals.user) redirect(303, '/staff/sign-in');
 		const form = await request.formData();

@@ -83,6 +83,14 @@
 					<h3>Public link and QR code</h3>
 					<QueueShareLink publicId={data.queue.publicId} queueName={data.queue.name} expanded />
 				</div>
+				<section class="queue-delete-section" aria-labelledby="queue-delete-title">
+					<h3 id="queue-delete-title">Delete queue</h3>
+					<p>This permanently removes the queue and disables its public link. Only queues with no session history can be deleted. If this queue has been operated, deactivate it from the queue list instead.</p>
+					<form method="POST" action={`?/deleteQueue&organization=${encodeURIComponent(data.organization.organizationId)}`}>
+						<label><input type="checkbox" name="confirmDeletion" value="yes" required /> I understand this permanently deletes this queue.</label>
+						<button type="submit" class="queue-delete-button">Delete queue</button>
+					</form>
+				</section>
 			</section>
 				{/if}
 

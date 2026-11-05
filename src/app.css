@@ -2241,6 +2241,50 @@ select {
 	gap: 18px;
 }
 
+.queue-delete-section {
+	margin-top: 1.5rem;
+	padding: 1.25rem;
+	border: 1px solid #e5b8b8;
+	border-radius: 0.75rem;
+	background: #fffafa;
+}
+
+.queue-delete-section h3 {
+	margin: 0 0 0.5rem;
+}
+
+.queue-delete-section p {
+	max-width: 42rem;
+	color: #5f4545;
+}
+
+.queue-delete-section form {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 1rem;
+}
+
+.queue-delete-section label {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.queue-delete-button {
+	border: 1px solid #a52b2b;
+	border-radius: 0.5rem;
+	padding: 0.65rem 0.9rem;
+	background: #a52b2b;
+	color: white;
+	font: inherit;
+	cursor: pointer;
+}
+
+.queue-delete-button:hover {
+	background: #842020;
+}
+
 .queue-create-card {
 	margin-bottom: 18px;
 }

@@ -145,6 +145,7 @@
 						Queue created. It is inactive until an administrator
 						activates it.
 					</p>{/if}
+				{#if data.deleted}<p class="staff-feedback success-message" role="status">Queue deleted. Its public link is no longer available.</p>{/if}
 				{#if data.updated}<p
 						class="staff-feedback success-message"
 						role="status"

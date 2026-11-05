@@ -155,7 +155,7 @@ Each story is marked **Planned** until implemented. The AQ identifiers follow th
 
 ## AQ-9: Delete a queue with no session history
 
-**Status** — Planned
+**Status** — Complete
 
 **User story** — As an organization administrator, I want to remove a queue that was created by mistake and never operated so obsolete setup and its public link are no longer available.
 
@@ -166,6 +166,8 @@ Each story is marked **Planned** until implemented. The AQ identifiers follow th
 - Deletion removes or disables the public link and QR target so it can no longer be used to join.
 - The server rechecks authorization and session-history eligibility as part of the delete operation. If session opening races with deletion, at most one operation succeeds and no sessionless deletion can erase a queue that acquired history.
 - A failed deletion leaves the queue and related records intact.
+
+**Implementation note** — Organization administrators can delete a queue from its configuration page after explicitly confirming. The conditional delete rechecks active admin membership and requires that no session of any state exists; this makes deletion race safely with manual or scheduled session creation. The queue's recurring schedule is removed with the queue, and the success page confirms that its public link is no longer available. Queues with session history remain intact and direct administrators to deactivate them.
 
 ## Open product decisions
 

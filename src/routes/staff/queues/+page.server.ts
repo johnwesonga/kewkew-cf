@@ -160,6 +160,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		blockedOccurrences,
 		createRequestId: organization.role === 'admin' ? crypto.randomUUID() : null,
 		created: url.searchParams.get('created') === '1',
+		deleted: url.searchParams.get('deleted') === '1',
 		updated: url.searchParams.get('updated') === '1',
 		opened: url.searchParams.get('opened') === '1',
 		sessionUpdated: url.searchParams.get('sessionUpdated'),

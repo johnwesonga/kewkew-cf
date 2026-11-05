@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canCloseQueueSession, canOpenQueueSession, resolveSessionTransition, validateQueueConfiguration } from './queue-rules';
+import { canCloseQueueSession, canOpenQueueSession, resolveQueueDeletion, resolveSessionTransition, validateQueueConfiguration } from './queue-rules';
 
 describe('validateQueueConfiguration', () => {
 	it('trims and accepts a valid anonymous queue with unlimited capacity', () => {
@@ -43,6 +43,24 @@ describe('canOpenQueueSession', () => {
 		expect(canOpenQueueSession(0, 1, 1)).toBe(false);
 		expect(canOpenQueueSession(1, 0, 1)).toBe(false);
 		expect(canOpenQueueSession(1, 1, 0)).toBe(false);
+	});
+});
+
+describe('resolveQueueDeletion', () => {
+	it('allows a confirmed queue with no session history to be deleted', () => {
+		expect(resolveQueueDeletion(true, false)).toEqual({ allowed: true });
+	});
+
+	it('requires explicit confirmation', () => {
+		expect(resolveQueueDeletion(false, false)).toEqual({ allowed: false, reason: 'confirmation_required' });
+	});
+
+	it('blocks deletion when any session history exists', () => {
+		expect(resolveQueueDeletion(true, true)).toEqual({ allowed: false, reason: 'session_history' });
+	});
+
+	it('requires confirmation before reporting session history', () => {
+		expect(resolveQueueDeletion(false, true)).toEqual({ allowed: false, reason: 'confirmation_required' });
 	});
 });
 

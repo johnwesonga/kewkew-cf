@@ -62,3 +62,13 @@ export function resolveSessionTransition(
 export function canOpenQueueSession(queueActive: number, locationActive: number, serviceActive: number): boolean {
 	return queueActive === 1 && locationActive === 1 && serviceActive === 1;
 }
+
+export type QueueDeletionDecision =
+	| { allowed: true }
+	| { allowed: false; reason: 'confirmation_required' | 'session_history' };
+
+export function resolveQueueDeletion(confirmed: boolean, hasSessionHistory: boolean): QueueDeletionDecision {
+	if (!confirmed) return { allowed: false, reason: 'confirmation_required' };
+	if (hasSessionHistory) return { allowed: false, reason: 'session_history' };
+	return { allowed: true };
+}
