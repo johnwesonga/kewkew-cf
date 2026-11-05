@@ -103,6 +103,20 @@
 									data.sessionState.slice(1)
 								: "No session"}
 						</span>
+						{#if data.sessionId && data.transitionRequestId && (data.sessionState === "open" || data.sessionState === "paused")}
+							<form
+								method="POST"
+								action={`/staff/queues?/changeSessionState&organization=${encodeURIComponent(data.organization.organizationId)}`}
+							>
+								<input type="hidden" name="queueId" value={data.queue.id} />
+								<input type="hidden" name="sessionId" value={data.sessionId} />
+								<input type="hidden" name="requestId" value={data.transitionRequestId} />
+								<input type="hidden" name="returnTo" value={`/staff/queues/${encodeURIComponent(data.queue.id)}/board`} />
+								<button class="queue-edit-link" type="submit" name="transition" value={data.sessionState === "open" ? "pause" : "resume"}>
+									{data.sessionState === "open" ? "Pause" : "Resume"}
+								</button>
+							</form>
+						{/if}
 						{#if data.sessionId && data.callRequestId}
 							<form
 								class="queue-board-call-form"
@@ -141,6 +155,10 @@
 						{/if}
 					</div>
 				</header>
+				{#if data.sessionUpdated === "paused"}<p class="staff-feedback success-message" role="status">Session paused. Visitors can no longer join.</p>{/if}
+				{#if data.sessionUpdated === "open"}<p class="staff-feedback success-message" role="status">Session resumed. Visitors can join again.</p>{/if}
+				{#if data.sessionUnchanged}<p class="staff-feedback" role="status">The session was already in that state.</p>{/if}
+				{#if data.sessionCloseBlocked}<p class="staff-feedback error-message" role="alert">Resolve all waiting, called, and serving tickets before closing this session.</p>{/if}
 				{#if form?.message}<p
 						class="staff-feedback error-message"
 						role="alert"

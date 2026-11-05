@@ -48,7 +48,7 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 
 **Status** — Complete
 
-**Implementation note** — The authorized live board is available from each queue row in `/staff/live` at `/staff/queues/[queueId]/board`. It loads the current session’s waiting, called, and serving tickets in queue-sequence order, hides names for anonymous tickets, distinguishes empty, paused, closed, and sessionless states, and refreshes every 10 seconds with a manual refresh control. Board access is scoped to active membership and assigned locations.
+**Implementation note** — The authorized live board is available from each queue row in `/staff/live` at `/staff/queues/[queueId]/board`. It loads the current session’s waiting, called, and serving tickets in queue-sequence order, hides names for anonymous tickets, distinguishes empty, paused, closed, and sessionless states, and refreshes every 10 seconds with a manual refresh control. Staff who can manage the queue session can pause or resume it from the board. Board access is scoped to active membership and assigned locations.
 
 **User story** — As a queue operator, I want to see waiting visitors and their current states so that I can serve the queue in order.
 
@@ -57,6 +57,7 @@ Staff authentication uses [AshAuthentication](https://ash-authentication.hexdocs
 - The queue board shows waiting, called, and serving tickets for the selected active queue session.
 - Tickets appear in stable queue order and show the public ticket number, current state, and required visitor name when available to the operator.
 - The board distinguishes an empty queue from a queue that is paused or closed.
+- An administrator or operator assigned to the queue's location can pause an open session or resume a paused session from the board; the existing server-side session authorization and conditional transition rules apply.
 - The board updates when a visitor joins, leaves, or a staff action changes a ticket.
 - On reconnect or manual refresh, the board recovers the latest persisted state.
 

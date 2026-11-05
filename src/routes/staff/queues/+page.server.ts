@@ -172,10 +172,16 @@ export const actions: Actions = {
 	changeSessionState: async ({ locals, request, url }) => {
 		if (!locals.user) redirect(303, '/staff/sign-in');
 		const form = await request.formData();
-		const organizationId = url.searchParams.get('organization') ?? '';
-		const returnPath = String(form.get('returnTo') ?? '') === '/staff/live' ? '/staff/live' : '/staff/queues';
-		const returnTo = (result: string) => `${returnPath}?organization=${encodeURIComponent(organizationId)}&${result}`;
 		const queueId = String(form.get('queueId') ?? '');
+		const organizationId = url.searchParams.get('organization') ?? '';
+		const requestedReturnTo = String(form.get('returnTo') ?? '');
+		const boardReturnPath = `/staff/queues/${encodeURIComponent(queueId)}/board`;
+		const returnPath = requestedReturnTo === '/staff/live'
+			? '/staff/live'
+			: requestedReturnTo === boardReturnPath
+				? boardReturnPath
+				: '/staff/queues';
+		const returnTo = (result: string) => `${returnPath}?organization=${encodeURIComponent(organizationId)}&${result}`;
 		const sessionId = String(form.get('sessionId') ?? '');
 		const requestId = String(form.get('requestId') ?? '');
 		const transition = String(form.get('transition') ?? '');
