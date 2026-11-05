@@ -201,6 +201,23 @@ These stories cover the business setup and administration foundation. Queue conf
 
 **Dependencies** — OLA-8 and OLA-9; SF-1; membership audit records.
 
+### OLA-11: Delete a service with no session history
+
+**Status** — Planned
+
+**User story** — As an organization administrator, I want to remove a service that was created by mistake and never operated so obsolete service and queue setup is no longer available.
+
+**Acceptance criteria**
+
+- Only an active administrator of the service's organization can delete the service; operators and users outside the organization cannot.
+- A service is eligible for deletion only when none of its queues has any session history, including closed or blocked sessions.
+- Deleting an eligible service atomically removes its queues that have no session history and their recurring schedule configuration. Their public queue links and QR targets stop resolving.
+- If any queue belonging to the service has session history, the service and all of its queues remain intact; the administrator is told to deactivate the service instead.
+- The server rechecks administrator access and session-history eligibility as part of the atomic deletion. If session creation races with deletion, either deletion succeeds before a session can be created, or the session creation succeeds and deletion is refused.
+- A failed deletion leaves the service and all related queue setup intact.
+
+**Dependencies** — OLA-6 and OLA-7; AQ-9; organization-scoped authorization and conditional D1 writes.
+
 ## Suggested implementation order
 
 1. OLA-1 and OLA-2: organization bootstrap, scoped reads, and administrator overview.
@@ -208,13 +225,14 @@ These stories cover the business setup and administration foundation. Queue conf
 3. OLA-4 and OLA-5: location creation, editing, and availability.
 4. OLA-6 and OLA-7: service management and availability.
 5. OLA-8 through OLA-10: staff invitations, access changes, and membership lifecycle.
+6. OLA-11: remove unused service and queue setup without deleting operational history.
 
 Keep each story independently reviewable. Do not bundle location or service management with queue configuration, and do not make deactivation cascade into ticket or session deletion.
 
 ## Out of scope for this initial administration flow
 
 - Public self-service business registration or paid plan selection.
-- Physical deletion of locations, services, memberships, queues, or ticket history.
+- Physical deletion of locations, memberships, and service or queue configuration with session history or ticket history. OLA-11 covers deletion of unused services and their queues when no session history exists.
 - Opening hours, holidays, addresses, maps, geofencing, and per-location branding.
 - Fine-grained permissions beyond administrator and location-assigned operator.
 - Bulk imports, organization mergers, or transferring locations between organizations.
